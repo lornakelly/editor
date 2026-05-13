@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-export { renderWithProviders } from "./render-helpers";
+export { createMockContextValue, renderWithProviders } from "./render-helpers";
 export { t } from "./translation-helpers";

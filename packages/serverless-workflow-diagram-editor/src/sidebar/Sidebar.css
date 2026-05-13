@@ -1,0 +1,12 @@
+@reference "../styles.css";
+
+/* Sidebar overrides scoped to .dec-root */
+@layer base {
+  .dec-root [data-sidebar="sidebar"] {
+    @apply dec:border-l dec:border-gray-200;
+  }
+
+  .dec-root.dark [data-sidebar="sidebar"] {
+    @apply dec:border-gray-700;
+  }
+}

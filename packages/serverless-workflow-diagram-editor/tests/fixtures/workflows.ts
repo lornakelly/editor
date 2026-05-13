@@ -116,6 +116,33 @@ export const BASIC_VALID_WORKFLOW_JSON_TASKS = JSON.stringify({
   ],
 });
 
+export const WORKFLOW_WITH_METADATA_YAML = `
+document:
+  dsl: 1.0.3
+  name: order-processing
+  version: 2.1.0
+  namespace: production
+do:
+  - validateOrder:
+      set:
+        status: validated
+  - processPayment:
+      call: http
+      with:
+        method: POST
+        endpoint:
+          uri: https://api.example.com/payments
+  - fulfillOrder:
+      set:
+        status: fulfilled
+  - notifyCustomer:
+      call: http
+      with:
+        method: POST
+        endpoint:
+          uri: https://api.example.com/notify
+`;
+
 export const EMPTY_WORKFLOW_JSON = JSON.stringify({
   document: {
     dsl: "1.0.3",

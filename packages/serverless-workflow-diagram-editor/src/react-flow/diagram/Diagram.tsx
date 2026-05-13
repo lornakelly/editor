@@ -23,6 +23,7 @@ import { ResolvedColorMode } from "../../types/colorMode";
 import { ReactFlowEdgeTypes } from "../edges/Edges";
 import { useDiagramEditorContext } from "../../store/DiagramEditorContext";
 import { buildDiagramElements } from "./diagramBuilder";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const FIT_VIEW_OPTIONS: RF.FitViewOptions = {
   maxZoom: 1,
@@ -111,6 +112,9 @@ export const Diagram = ({ divRef, ref, colorMode = "light" }: DiagramProps) => {
           <RF.ControlButton onClick={() => setMinimapVisible(!minimapVisible)}>M</RF.ControlButton>
         </RF.Controls>
         <RF.Background className="diagram-background" variant={RF.BackgroundVariant.Cross} />
+        <RF.Panel position="top-right">
+          <SidebarTrigger className="dec:bg-white dec:dark:bg-gray-800 dec:border dec:border-gray-200 dec:dark:border-gray-700 dec:rounded-md dec:p-1.5 dec:shadow-sm dec:hover:bg-gray-50 dec:dark:hover:bg-gray-700" />
+        </RF.Panel>
       </RF.ReactFlow>
     </div>
   );

@@ -23,6 +23,8 @@ import { useDiagramEditorContext } from "../store/DiagramEditorContext";
 import { ParsingErrorPage } from "./error-pages/ParsingErrorPage";
 import { ColorMode, ResolvedColorMode } from "../types/colorMode";
 import { useResolvedColorMode } from "../hooks/useResolvedColorMode";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "../sidebar/AppSidebar";
 
 /**
  * DiagramEditor component API
@@ -52,7 +54,12 @@ const DiagramEditorContent = ({
   return model === null ? (
     <ParsingErrorPage />
   ) : (
-    <Diagram ref={diagramRef} divRef={diagramDivRef} colorMode={colorMode} />
+    <>
+      <SidebarInset>
+        <Diagram ref={diagramRef} divRef={diagramDivRef} colorMode={colorMode} />
+      </SidebarInset>
+      <AppSidebar />
+    </>
   );
 };
 
@@ -91,11 +98,13 @@ export const DiagramEditor = (props: DiagramEditorProps) => {
         locale={locale}
       >
         <I18nProvider locale={locale} dictionaries={dictionaries}>
-          <DiagramEditorContent
-            diagramRef={diagramRef}
-            diagramDivRef={diagramDivRef}
-            colorMode={resolvedColorMode}
-          />
+          <SidebarProvider defaultOpen={false}>
+            <DiagramEditorContent
+              diagramRef={diagramRef}
+              diagramDivRef={diagramDivRef}
+              colorMode={resolvedColorMode}
+            />
+          </SidebarProvider>
         </I18nProvider>
       </DiagramEditorContextProvider>
     </div>
