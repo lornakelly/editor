@@ -22,8 +22,6 @@
 
 @import "tailwindcss" prefix(dec);
 
-@import "./shadcn/theme.css";
-
 @custom-variant dark (&:where(.dec-root.dark, .dec-root.dark *));
 
 /*

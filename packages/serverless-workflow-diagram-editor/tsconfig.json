@@ -2,9 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node", "vite/client"],
-    "paths": {
-      "@/*": ["./src/*"]
-    },
     "declaration": true,
     "declarationMap": true,
     "sourceMap": false,

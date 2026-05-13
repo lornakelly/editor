@@ -23,7 +23,7 @@ import { useDiagramEditorContext } from "../store/DiagramEditorContext";
 import { ParsingErrorPage } from "./error-pages/ParsingErrorPage";
 import { ColorMode, ResolvedColorMode } from "../types/colorMode";
 import { useResolvedColorMode } from "../hooks/useResolvedColorMode";
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "../sidebar/SidebarContext";
 import { AppSidebar } from "../sidebar/AppSidebar";
 
 /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { Sidebar, SidebarContent, SidebarHeader } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader } from "./SidebarContext";
 import { useI18n } from "@serverlessworkflow/i18n";
 import { WorkflowInfoContent } from "./WorkflowInfoContent";
 import { PanelRightClose } from "lucide-react";
@@ -24,7 +24,7 @@ export function AppSidebar() {
   const { t } = useI18n();
 
   return (
-    <Sidebar side="right" collapsible="icon" aria-label={t("sidebar.toggle")}>
+    <Sidebar side="right" aria-label={t("sidebar.toggle")}>
       <SidebarHeader className="dec:flex dec:items-center dec:gap-2 dec:px-4 dec:py-3">
         <PanelRightClose className="dec:h-4 dec:w-4 dec:text-gray-500" />
       </SidebarHeader>

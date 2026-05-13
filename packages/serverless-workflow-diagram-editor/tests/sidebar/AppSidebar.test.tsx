@@ -17,7 +17,7 @@
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import { render } from "@testing-library/react";
-import { SidebarProvider } from "../../src/components/ui/sidebar";
+import { SidebarProvider } from "../../src/sidebar/SidebarContext";
 import { AppSidebar } from "../../src/sidebar/AppSidebar";
 import { I18nProvider } from "@serverlessworkflow/i18n";
 import {
@@ -54,7 +54,7 @@ function renderWithSidebar(contextOverrides?: Partial<DiagramEditorContextType>)
 describe("AppSidebar", () => {
   it("renders the sidebar", () => {
     const { container } = renderWithSidebar();
-    expect(container.querySelector('[data-slot="sidebar"]')).toBeInTheDocument();
+    expect(container.querySelector("aside")).toBeInTheDocument();
   });
 
   it("renders workflow info content", () => {

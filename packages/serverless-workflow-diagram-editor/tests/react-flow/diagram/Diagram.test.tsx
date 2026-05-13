@@ -18,7 +18,7 @@ import { render, screen } from "@testing-library/react";
 import { vi, it, expect, afterEach, describe } from "vitest";
 import { Diagram } from "../../../src/react-flow/diagram/Diagram";
 import { DiagramEditorContextProvider } from "../../../src/store/DiagramEditorContextProvider";
-import { SidebarProvider } from "../../../src/components/ui/sidebar";
+import { SidebarProvider } from "../../../src/sidebar/SidebarContext";
 
 describe("Diagram Component", () => {
   afterEach(() => {

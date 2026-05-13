@@ -23,7 +23,7 @@ import { ResolvedColorMode } from "../../types/colorMode";
 import { ReactFlowEdgeTypes } from "../edges/Edges";
 import { useDiagramEditorContext } from "../../store/DiagramEditorContext";
 import { buildDiagramElements } from "./diagramBuilder";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "../../sidebar/SidebarContext";
 
 const FIT_VIEW_OPTIONS: RF.FitViewOptions = {
   maxZoom: 1,
