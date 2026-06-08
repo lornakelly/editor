@@ -24,6 +24,11 @@ import {
   getCatchContainerNodeIds,
 } from "../../../src/react-flow/diagram/diagramBuilder";
 import { EdgeTypes } from "../../../src/react-flow/edges/Edges";
+import {
+  DEFAULT_NODE_SIZE,
+  TERMINAL_NODE_SIZE,
+  getNodeSize,
+} from "../../../src/react-flow/diagram/autoLayout";
 import { parseWorkflow } from "../../../src/core";
 import {
   BASIC_VALID_WORKFLOW_JSON,
@@ -637,6 +642,67 @@ describe("diagramBuilder", () => {
             expect(nodesWithOutgoingEdges.has(node.id)).toBe(true);
           }
         });
+      });
+    });
+  });
+
+  describe("node sizing", () => {
+    // A do → try/catch workflow produces container nodes, which the SDK wraps with entry/exit nodes.
+    const workflowWithContainers = JSON.stringify({
+      document: {
+        dsl: "1.0.3",
+        name: "workflow-with-containers",
+        version: "1.0.0",
+        namespace: "default",
+      },
+      do: [
+        {
+          tryBlock: {
+            try: [{ step1: { set: { variable: "task" } } }],
+            catch: {
+              errors: { with: { type: "https://example.com/errors/test" } },
+              do: [{ recover: { set: { variable: "recovery" } } }],
+            },
+          },
+        },
+      ],
+    });
+
+    it.each([GraphNodeType.Entry, GraphNodeType.Exit])(
+      "getNodeSize returns the compact terminal size for %s",
+      (type) => {
+        expect(getNodeSize(type)).toBe(TERMINAL_NODE_SIZE);
+      },
+    );
+
+    it.each([
+      GraphNodeType.Call,
+      GraphNodeType.Do,
+      GraphNodeType.Start,
+      GraphNodeType.End,
+      undefined,
+    ])("getNodeSize returns the default size for %s", (type) => {
+      expect(getNodeSize(type)).toBe(DEFAULT_NODE_SIZE);
+    });
+
+    it("assigns the compact terminal size to entry/exit nodes and the default size to others", () => {
+      const diagram = buildDiagramFromWorkflow(workflowWithContainers);
+
+      const terminals = diagram.nodes.filter(
+        (node) => node.type === GraphNodeType.Entry || node.type === GraphNodeType.Exit,
+      );
+      expect(terminals.length).toBeGreaterThan(0);
+      terminals.forEach((node) => {
+        expect(node.width).toBe(TERMINAL_NODE_SIZE.width);
+        expect(node.height).toBe(TERMINAL_NODE_SIZE.height);
+      });
+
+      const nonTerminals = diagram.nodes.filter(
+        (node) => node.type !== GraphNodeType.Entry && node.type !== GraphNodeType.Exit,
+      );
+      nonTerminals.forEach((node) => {
+        expect(node.width).toBe(DEFAULT_NODE_SIZE.width);
+        expect(node.height).toBe(DEFAULT_NODE_SIZE.height);
       });
     });
   });

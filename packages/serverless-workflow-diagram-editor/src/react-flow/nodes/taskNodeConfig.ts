@@ -24,6 +24,8 @@ import {
   GitFork,
   IterationCw,
   List,
+  LogIn,
+  LogOut,
   Megaphone,
   PenLine,
   Phone,
@@ -31,6 +33,7 @@ import {
   Terminal,
 } from "lucide-react";
 import type { ComponentType } from "react";
+import type { TranslationKeys } from "../../i18n/locales/en";
 
 export interface TaskNodeConfig {
   color: string;
@@ -140,6 +143,30 @@ export const containerNodeConfigMap: Record<ContainerNodeType, TaskNodeConfig> =
     typeLabel: "CATCH",
   },
 };
+
+/* Terminal nodes (entry/exit) are uniform structural markers inside containers — they have no
+   per-type color (unlike leaf/container nodes), so they get their own lightweight config. */
+export type TerminalNodeType = typeof GraphNodeType.Entry | typeof GraphNodeType.Exit;
+
+export interface TerminalNodeConfig {
+  icon: ComponentType<{ size?: number; className?: string }>;
+  labelKey: TranslationKeys;
+}
+
+export const terminalNodeConfigMap: Record<TerminalNodeType, TerminalNodeConfig> = {
+  [GraphNodeType.Entry]: {
+    icon: LogIn,
+    labelKey: "node.entry",
+  },
+  [GraphNodeType.Exit]: {
+    icon: LogOut,
+    labelKey: "node.exit",
+  },
+};
+
+export function isTerminalNodeType(type: string | undefined): type is TerminalNodeType {
+  return type === GraphNodeType.Entry || type === GraphNodeType.Exit;
+}
 
 const nodeConfigMap: Record<string, TaskNodeConfig> = {
   ...leafNodeConfigMap,
