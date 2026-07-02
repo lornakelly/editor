@@ -401,25 +401,23 @@
 
   /* end validation errors */
 
-  .dec-root .dec-start-end-node {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
   .dec-root .dec-start-node, .dec-root .dec-end-node{
     width: 45px;
     height: 45px;
     border-radius: 50%;
     display: flex;
-    justify-content: center;
-    align-items: center;
     position: relative;
 
     @apply dec:border
-     dec:border-slate-400
+     dec:border-[var(--dec-edge-selected)]
      dec:bg-slate-100;
+  }
+
+  .dec-root .dec-start-end-node {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .dec-root .dec-end-node-inner {
@@ -429,21 +427,15 @@
     pointer-events: none;
 
     @apply dec:border
-     dec:border-slate-400
+     dec:border-[var(--dec-edge-selected)]
      dec:bg-slate-100;
   }
 
   .dec-root.dark .dec-start-node,
-  .dec-root.dark .dec-end-node {
+  .dec-root.dark .dec-end-node,
+  .dec-root.dark .dec-end-node-inner{
     @apply dec:border
-     dec:border-slate-600
-     dec:bg-slate-800
-     dec:text-slate-300;
-  }
-
-  .dec-root.dark .dec-end-node-inner {
-    @apply dec:border
-     dec:border-slate-600
+     dec:border-[var(--dec-edge-selected)]
      dec:bg-slate-800;
   }
 }
@@ -451,7 +443,7 @@
 /* custom edges */
 /* React flow SVG components do not work with classes defined into layers */
 .dec-root .edge-line {
-  @apply dec:stroke-[#aea6a6]
+  @apply dec:stroke-[var(--dec-edge-selected)]
         dec:stroke-2
         dec:transition-[filter];
 }
