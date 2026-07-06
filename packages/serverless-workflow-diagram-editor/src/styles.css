@@ -49,15 +49,33 @@
     /* Z-index layering for edges and labels */
     --dec-zindex-edge-label-regular: 1000;
 
+    /* canvas */
+    --dec-canvas-bg: #e9eef3;
+    --dec-canvas-pattern: #8897ac;
+
+    /* errors */
     --dec-error-accent: #ef4444;
     --dec-error-glow: rgba(239, 68, 68, 0.35);
+
+    /* Selection / focus accent - (node rings, edge glow, condition-edge stroke, minimap viewport) */
+    --dec-selected-rgb: 59 130 246;
+
+    /* node hover glow */
+    --dec-node-hover-glow: rgba(0, 65, 208, 0.3);
+
+    /* Dark surface palette */
+    --dec-surface-dark: #1a202c;
+    --dec-surface-dark-raised: #1f2937;
+    --dec-surface-dark-elevated: #2d3748;
+
+    /* edges */
     --dec-edge-selected: #aea6a6;
-    --dec-edge-selected-condition: rgb(59 130 246);
+    --dec-edge-selected-condition: rgb(var(--dec-selected-rgb));
 
     /* minimap */
     --dec-minimap-bg: #f8fafc;
     --dec-minimap-mask: rgba(100, 116, 139, 0.25);
-    --dec-minimap-viewport: rgb(59 130 246);
+    --dec-minimap-viewport: rgb(var(--dec-selected-rgb));
     --dec-minimap-node: #94a3b8;
     --dec-minimap-node-stroke: #64748b;
     --dec-minimap-border: #cbd5e1;
@@ -74,18 +92,26 @@
   }
 
   .dec-root.dark {
+    /* canvas */
+    --dec-canvas-bg: #1c222c;
+    --dec-canvas-pattern: #4a5568;
+
+    /* errors */
     --dec-error-accent: #f87171;
     --dec-error-glow: rgba(248, 113, 113, 0.4);
+    
     --dec-edge-selected: #aea6a6;
-    --dec-edge-selected-condition: rgb(59 130 246);
+    --dec-selected-rgb: 96 165 250;
+    --dec-edge-selected-condition: rgb(var(--dec-selected-rgb));
+    --dec-node-hover-glow: rgba(255, 255, 255, 0.3);
   
     /* minimap */
-    --dec-minimap-bg: #1a202c;
+    --dec-minimap-bg: var(--dec-surface-dark);
     --dec-minimap-mask: rgba(2, 6, 23, 0.5);
-    --dec-minimap-viewport: rgb(96 165 250);
+    --dec-minimap-viewport: rgb(var(--dec-selected-rgb));
     --dec-minimap-node: #94a3b8;
     --dec-minimap-node-stroke: #cbd5e1;
-    --dec-minimap-border: #2d3748;
+    --dec-minimap-border: var(--dec-surface-dark-elevated);
     --dec-minimap-shadow: rgba(0, 0, 0, 0.5);
     
     /* toast */

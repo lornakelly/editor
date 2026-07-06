@@ -51,7 +51,7 @@
 
   --tooltip-foreground: hsl(210 40% 98%);
 
-  --sidebar: #2d3748;
+  --sidebar: var(--dec-surface-dark-elevated);
 
   --sidebar-foreground: hsl(240 4.8% 95.9%);
 
