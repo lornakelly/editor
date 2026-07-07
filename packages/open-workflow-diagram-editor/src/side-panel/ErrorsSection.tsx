@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { CircleAlert } from "lucide-react";
 
 export type ErrorItem = {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { useDiagramEditorContext } from "../../store/DiagramEditorContext";
 import { ErrorPage } from "./ErrorPage";
 

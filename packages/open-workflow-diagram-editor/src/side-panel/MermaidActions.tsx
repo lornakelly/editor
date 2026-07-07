@@ -15,7 +15,7 @@
  */
 
 import * as React from "react";
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { ClipboardPen, Download, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { exportToMermaid } from "@/core";

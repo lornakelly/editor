@@ -18,7 +18,7 @@
 
 ## 1. Prepare Release
 
-1. Go to: https://github.com/serverlessworkflow/editor/actions/workflows/prepare-release.yaml
+1. Go to: https://github.com/open-workflow-specification/editor/actions/workflows/prepare-release.yaml
 2. Click **"Run workflow"**
 3. Select the branch to release from:
    - **`main`** - for normal releases (1.0.0, 1.1.0, 2.0.0)
@@ -40,9 +40,9 @@ On merge, the publish workflow automatically (no manual action needed):
 - Publishes to npm
 - Creates git tags and GitHub releases
 
-Check CI run at: [https://github.com/serverlessworkflow/editor/actions/workflows/publish-release.yaml](https://github.com/serverlessworkflow/editor/actions/workflows/publish-release.yaml)  
-GH Releases: [https://github.com/serverlessworkflow/editor/releases](https://github.com/serverlessworkflow/editor/releases)  
-NPM publishing at: [https://www.npmjs.com/package/@serverlessworkflow/diagram-editor?activeTab=versions](https://www.npmjs.com/package/@serverlessworkflow/diagram-editor?activeTab=versions)
+Check CI run at: [https://github.com/open-workflow-specification/editor/actions/workflows/publish-release.yaml](https://github.com/open-workflow-specification/editor/actions/workflows/publish-release.yaml)  
+GH Releases: [https://github.com/open-workflow-specification/editor/releases](https://github.com/open-workflow-specification/editor/releases)  
+NPM publishing at: [https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions](https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions)
 
 ---
 

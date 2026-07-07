@@ -18,7 +18,7 @@ import * as React from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { Diagram, DiagramRef } from "../react-flow/diagram/Diagram";
 import { DiagramEditorContextProvider } from "../store/DiagramEditorContextProvider";
-import { I18nProvider, detectLocale, useI18n } from "@serverlessworkflow/i18n";
+import { I18nProvider, detectLocale, useI18n } from "@openworkflowspec/i18n";
 import { dictionaries } from "../i18n/locales";
 import { useDiagramEditorContext } from "../store/DiagramEditorContext";
 import { ParsingErrorPage } from "./error-pages/ParsingErrorPage";

@@ -16,7 +16,7 @@
 
 import type * as RF from "@xyflow/react";
 import { dump } from "js-yaml";
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { getTaskDetails, type DetailField } from "@/core/taskDetails";
 import type { BaseNodeData } from "@/react-flow/nodes/Nodes";
 import { YamlField, PropertyField, SectionHeader } from "./Fields";

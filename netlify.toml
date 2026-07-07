@@ -17,7 +17,7 @@
 [build.environment]
   NODE_VERSION = "24"
   PNPM_VERSION = "10.31.0"
-  PREVIEW_PACKAGE_NAME = "@openworkflow/diagram-editor"
+  PREVIEW_PACKAGE_NAME = "@openworkflowspec/diagram-editor"
 
 [build]
   command = """

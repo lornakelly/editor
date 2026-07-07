@@ -15,7 +15,7 @@
  */
 
 import type { Specification } from "@serverlessworkflow/sdk";
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { InlineField, SectionHeader, StackedField } from "./Fields";
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";
 import { getGeneralErrors } from "@/core";

@@ -23,6 +23,7 @@ Official visual diagram editor for the [Open Workflow Specification](https://git
 ### Requirements
 
 This package requires React 19 in the consuming application:
+
 ```bash
 npm install react@^19 react-dom@^19
 ```
@@ -42,8 +43,8 @@ yarn add @openworkflowspec/diagram-editor
 Basic example:
 
 ```tsx
-import { DiagramEditor } from '@openworkflowspec/diagram-editor';
-import '@openworkflowspec/diagram-editor/styles.css';
+import { DiagramEditor } from "@openworkflowspec/diagram-editor";
+import "@openworkflowspec/diagram-editor/styles.css";
 
 const workflowContent = `
 document:
@@ -60,9 +61,8 @@ do:
 `;
 
 function App() {
-
   return (
-    <div style={{ height: '100vh' }}>
+    <div style={{ height: "100vh" }}>
       <DiagramEditor content={workflowContent} locale="en" isReadOnly={true} />
     </div>
   );
@@ -71,13 +71,12 @@ function App() {
 
 ### Props
 
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `content` | `string` | Yes | - | Serverless Workflow specification in YAML or JSON format |
-| `isReadOnly` | `boolean` | Yes | - | Enable read-only mode to prevent editing |
-| `locale` | `string` | Yes | - | Language locale for the editor UI |
-| `colorMode` | `'light' \| 'dark' \| 'system'` | No | `'system'` | Color theme for the editor |
-
+| Prop         | Type                            | Required | Default    | Description                                              |
+| ------------ | ------------------------------- | -------- | ---------- | -------------------------------------------------------- |
+| `content`    | `string`                        | Yes      | -          | Serverless Workflow specification in YAML or JSON format |
+| `isReadOnly` | `boolean`                       | Yes      | -          | Enable read-only mode to prevent editing                 |
+| `locale`     | `string`                        | Yes      | -          | Language locale for the editor UI                        |
+| `colorMode`  | `'light' \| 'dark' \| 'system'` | No       | `'system'` | Color theme for the editor                               |
 
 ## Development
 

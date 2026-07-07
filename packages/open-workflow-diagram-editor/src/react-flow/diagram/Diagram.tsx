@@ -16,7 +16,7 @@
 
 import * as React from "react";
 import * as RF from "@xyflow/react";
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { ReactFlowNodeTypes } from "../nodes/Nodes";
 import "@xyflow/react/dist/style.css";
 import "./Diagram.css";

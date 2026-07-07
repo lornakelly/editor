@@ -19,7 +19,7 @@ import { vi, it, expect, afterEach, describe, beforeEach } from "vitest";
 import { Diagram } from "../../../src/react-flow/diagram/Diagram";
 import { DiagramEditorContextProvider } from "../../../src/store/DiagramEditorContextProvider";
 import { SidebarProvider } from "../../../src/components/ui/sidebar";
-import { I18nProvider } from "@serverlessworkflow/i18n";
+import { I18nProvider } from "@openworkflowspec/i18n";
 import { en } from "../../../src/i18n/locales/en";
 import { ReactFlowProvider, ReactFlow } from "@xyflow/react";
 import * as RF from "@xyflow/react";

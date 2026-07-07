@@ -16,7 +16,7 @@
 
 import * as React from "react";
 import type * as RF from "@xyflow/react";
-import { useI18n } from "@serverlessworkflow/i18n";
+import { useI18n } from "@openworkflowspec/i18n";
 import { Workflow, Info, Box } from "lucide-react";
 import {
   Sidebar,

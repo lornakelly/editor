@@ -35,7 +35,7 @@ The project is structured as a monorepo to support multiple distribution targets
 
 ```bash
 # Clone the repository
-git clone https://github.com/serverlessworkflow/editor.git
+git clone https://github.com/open-workflow-specification/editor.git
 cd editor
 
 # Install dependencies
@@ -65,7 +65,7 @@ The project aims for the editor to be **embeddable**, with the core logic decoup
 
 ## Reporting an Issue
 
-If you find a bug or have a question, please check the [existing issues](https://github.com/serverlessworkflow/editor/issues) first.
+If you find a bug or have a question, please check the [existing issues](https://github.com/open-workflow-specification/editor/issues) first.
 
 1. Open a new issue using the appropriate template.
 2. Provide a clear description of the problem.
@@ -159,7 +159,7 @@ pnpm typecheck
 
 Pull requests automatically trigger:
 
-- **Netlify Deploy Previews**: Storybook is automatically built and deployed for PRs that modify the `@serverlessworkflow/diagram-editor` package, allowing reviewers to preview changes interactively.
+- **Netlify Deploy Previews**: Storybook is automatically built and deployed for PRs that modify the `@openworkflowspec/diagram-editor` package, allowing reviewers to preview changes interactively.
 - **Automated Checks**: Linting, type checking, tests, and builds must pass before merging.
 
 ## Pull Request Process
@@ -178,7 +178,7 @@ Pull requests automatically trigger:
    **Note:** If you don't have the `upstream` remote configured:
 
    ```bash
-   git remote add upstream https://github.com/serverlessworkflow/editor.git
+   git remote add upstream https://github.com/open-workflow-specification/editor.git
    ```
 
 6. **Submit** a Pull Request (PR).

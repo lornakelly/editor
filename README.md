@@ -44,7 +44,7 @@ See the [Getting Started guide](./packages/serverless-workflow-diagram-editor/RE
 
 ```bash
 # Clone the repository
-git clone https://github.com/serverlessworkflow/editor.git
+git clone https://github.com/open-workflow-specification/editor.git
 cd editor
 
 # Install dependencies
@@ -132,7 +132,7 @@ editor/
 
 ## Packages
 
-### [@openworkflow/diagram-editor](./packages/open-workflow-diagram-editor)
+### [@openworkflowspec/diagram-editor](./packages/open-workflow-diagram-editor)
 
 The main visual diagram editor component built with:
 
@@ -144,7 +144,7 @@ The main visual diagram editor component built with:
 - **[Storybook](https://storybook.js.org/)** for component development
 - **[Vitest](https://vitest.dev/)** and **[Playwright](https://playwright.dev/)** for testing
 
-### [@serverlessworkflow/i18n](./packages/i18n)
+### [@openworkflowspec/i18n](./packages/i18n)
 
 Internationalization utilities used by the diagram editor.
 
@@ -212,7 +212,7 @@ pnpm changeset
 
 # Or compare against upstream explicitly
 # add upstream remote, if you don't have it already
-git remote add upstream https://github.com/serverlessworkflow/editor.git
+git remote add upstream https://github.com/open-workflow-specification/editor.git
 
 pnpm changeset --since upstream/main
 ```
@@ -222,8 +222,8 @@ See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for details.
 ## Community
 
 - **Slack**: Join [#open-workflow](https://cloud-native.slack.com/archives/C06PYFT9HTZ) on [CNCF Slack](https://slack.cncf.io/)
-- **Issues**: [GitHub Issues](https://github.com/serverlessworkflow/editor/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/serverlessworkflow/editor/discussions)
+- **Issues**: [GitHub Issues](https://github.com/open-workflow-specification/editor/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/open-workflow-specification/editor/discussions)
 
 ## License
 

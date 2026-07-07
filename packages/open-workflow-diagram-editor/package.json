@@ -41,7 +41,7 @@
     "test-e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@serverlessworkflow/i18n": "workspace:*",
+    "@openworkflowspec/i18n": "workspace:*",
     "@serverlessworkflow/sdk": "catalog:",
     "@xyflow/react": "catalog:",
     "class-variance-authority": "catalog:",

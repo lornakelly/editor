@@ -15,7 +15,7 @@
  */
 
 import { render, type RenderOptions } from "@testing-library/react";
-import { I18nProvider } from "@serverlessworkflow/i18n";
+import { I18nProvider } from "@openworkflowspec/i18n";
 import {
   DiagramEditorContext,
   type DiagramEditorContextType,
