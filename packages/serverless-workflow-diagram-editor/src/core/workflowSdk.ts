@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-Present The Serverless Workflow Specification Authors
+ * Copyright 2021-Present The Open Workflow Specification Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ export type WorkflowParseResult = {
 };
 
 /**
- * Parses validation error messages from the Serverless Workflow SDK into structured error objects.
+ * Parses validation error messages from the Open Workflow SDK into structured error objects.
  *
  * The SDK produces validation errors in two distinct formats:
  *

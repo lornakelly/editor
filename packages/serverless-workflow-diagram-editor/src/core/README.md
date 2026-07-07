@@ -1,5 +1,5 @@
 <!--
-   Copyright 2021-Present The Serverless Workflow Specification Authors
+   Copyright 2021-Present The Open Workflow Specification Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ Core business logic layer that is agnostic to rendering libraries and platform-s
 
 ## Purpose
 
-The core layer serves as the abstraction boundary between the Serverless Workflow SDK and the editor's UI layer. It handles workflow parsing, validation, graph manipulation, and data transformation without any dependencies on React Flow or other rendering frameworks.
+The core layer serves as the abstraction boundary between the Open Workflow SDK and the editor's UI layer. It handles workflow parsing, validation, graph manipulation, and data transformation without any dependencies on React Flow or other rendering frameworks.
 
 ## Functional Areas
 

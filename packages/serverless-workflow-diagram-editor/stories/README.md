@@ -1,5 +1,5 @@
 <!--
-   Copyright 2021-Present The Serverless Workflow Specification Authors
+   Copyright 2021-Present The Open Workflow Specification Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -74,5 +74,5 @@ The following features have been identified as potential additions for future it
 ## Resources
 
 - [Storybook Documentation](https://storybook.js.org/docs/)
-- [Serverless Workflow Specification](https://github.com/serverlessworkflow/specification)
+- [Open Workflow Specification](https://github.com/serverlessworkflow/specification)
 - [TypeScript SDK](https://github.com/serverlessworkflow/sdk-typescript)

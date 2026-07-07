@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-Present The Serverless Workflow Specification Authors
+ * Copyright 2021-Present The Open Workflow Specification Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,12 @@ const config: StorybookConfig = {
     disableTelemetry: true, // Do not collect data
   },
   stories: ["../stories/**/*.mdx", "../stories/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
-  addons: ["@chromatic-com/storybook", "@storybook/addon-vitest", "@storybook/addon-a11y", "@storybook/addon-docs"],
+  addons: [
+    "@chromatic-com/storybook",
+    "@storybook/addon-vitest",
+    "@storybook/addon-a11y",
+    "@storybook/addon-docs",
+  ],
   framework: "@storybook/react-vite",
 };
 

@@ -1,5 +1,5 @@
 <!--
-   Copyright 2021-Present The Serverless Workflow Specification Authors
+   Copyright 2021-Present The Open Workflow Specification Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ Note: Some top-level components may import `ReactFlowProvider`, and other layers
 
 ## Architecture Constraint
 
-React Flow is the rendering library used to visualize Serverless Workflow diagrams. By isolating all React Flow dependencies to this directory, we ensure:
+React Flow is the rendering library used to visualize Open Workflow diagrams. By isolating all React Flow dependencies to this directory, we ensure:
 
 - The core workflow logic remains independent of the rendering implementation
 - The editor can be adapted to different rendering libraries if needed
@@ -43,7 +43,7 @@ Custom edge implementations representing different workflow transition types, ed
 
 ### `nodes/`
 
-Node component implementations for all Serverless Workflow task types.
+Node component implementations for all Open Workflow task types.
 
 - **Terminal Nodes**: Compact visual representations for workflow entry/exit points (start, end, entry, exit)
 - **Leaf Task Nodes**: Task nodes without children

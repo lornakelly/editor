@@ -1,7 +1,7 @@
 {
   "name": "serverless-workflow-editor",
   "private": true,
-  "description": "CNCF Serverless Workflow Specification Visual Editor",
+  "description": "Open Workflow Specification Visual Editor",
   "homepage": "https://github.com/serverlessworkflow/editor",
   "bugs": {
     "url": "https://github.com/serverlessworkflow/editor/issues"

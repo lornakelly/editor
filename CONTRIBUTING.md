@@ -1,5 +1,5 @@
 <!--
-   Copyright 2021-Present The Serverless Workflow Specification Authors
+   Copyright 2021-Present The Open Workflow Specification Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
    limitations under the License.
 -->
 
-# Contributing to Serverless Workflow Editor
+# Contributing to Open Workflow Editor
 
-Thank you for your interest in contributing to the CNCF Serverless Workflow Editor! We welcome all types of contributions, including bug reports, feature requests, documentation improvements, and code changes.
+Thank you for your interest in contributing to the Open Workflow Editor! We welcome all types of contributions, including bug reports, feature requests, documentation improvements, and code changes.
 
-This project is the official, vendor-neutral visual editor for the [Serverless Workflow Specification](https://github.com/serverlessworkflow/specification).
+This project is the official, vendor-neutral visual editor for the [Open Workflow Specification](https://github.com/serverlessworkflow/specification).
 
 ---
 

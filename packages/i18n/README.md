@@ -1,5 +1,5 @@
 <!--
-   Copyright 2021-Present The Serverless Workflow Specification Authors
+   Copyright 2021-Present The Open Workflow Specification Authors
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ A lightweight internationalization (i18n) package for React applications, provid
 
 ## Overview
 
-This package provides a minimal i18n solution built on React Context, designed for use in the Serverless Workflow Diagram Editor and other React applications.
+This package provides a minimal i18n solution built on React Context, designed for use in the Open Workflow Diagram Editor and other React applications.
 
 ## Features
 
@@ -194,4 +194,4 @@ Apache-2.0
 
 ## Repository
 
-Part of the [Serverless Workflow Editor](https://github.com/serverlessworkflow/editor) monorepo.
+Part of the [Open Workflow Editor](https://github.com/serverlessworkflow/editor) monorepo.
