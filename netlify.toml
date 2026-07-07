@@ -17,7 +17,7 @@
 [build.environment]
   NODE_VERSION = "24"
   PNPM_VERSION = "10.31.0"
-  PREVIEW_PACKAGE_NAME = "@serverlessworkflow/diagram-editor"
+  PREVIEW_PACKAGE_NAME = "@openworkflow/diagram-editor"
 
 [build]
   command = """
@@ -25,7 +25,7 @@
     pnpm -F "${PREVIEW_PACKAGE_NAME}..." build:dev
     pnpm -F "$PREVIEW_PACKAGE_NAME" build:storybook
   """
-  publish = "packages/serverless-workflow-diagram-editor/dist-storybook"
+  publish = "packages/open-workflow-diagram-editor/dist-storybook"
   ignore = """
     set -e -o pipefail
     git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main

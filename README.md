@@ -64,14 +64,14 @@ pnpm run build:prod
 Storybook provides an interactive development environment for the diagram editor:
 
 ```bash
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 pnpm start  # Starts Storybook on http://localhost:6006
 ```
 
 ### Running Tests
 
 ```bash
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 
 # Unit tests (Vitest)
 pnpm test
@@ -118,7 +118,7 @@ editor/
 ├── .husky/                     # Git hooks (commit-msg for DCO, pre-commit for linting)
 ├── adr/                        # Architecture Decision Records
 ├── packages/                   # Monorepo workspace packages
-│   ├── serverless-workflow-diagram-editor/  # Main diagram editor component
+│   ├── open-workflow-diagram-editor/  # Main diagram editor component
 │   └── i18n/                   # Internationalization utilities
 ├── .changeset/                 # Changesets for version management
 ├── .oxfmtrc.json               # Formatter config (oxfmt)
@@ -132,7 +132,7 @@ editor/
 
 ## Packages
 
-### [@serverlessworkflow/diagram-editor](./packages/serverless-workflow-diagram-editor)
+### [@openworkflow/diagram-editor](./packages/open-workflow-diagram-editor)
 
 The main visual diagram editor component built with:
 
@@ -221,7 +221,7 @@ See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for details.
 
 ## Community
 
-- **Slack**: Join [#serverless-workflow](https://cloud-native.slack.com/archives/C06PYFT9HTZ) on [CNCF Slack](https://slack.cncf.io/)
+- **Slack**: Join [#open-workflow](https://cloud-native.slack.com/archives/C06PYFT9HTZ) on [CNCF Slack](https://slack.cncf.io/)
 - **Issues**: [GitHub Issues](https://github.com/serverlessworkflow/editor/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/serverlessworkflow/editor/discussions)
 

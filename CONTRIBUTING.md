@@ -125,7 +125,7 @@ The project uses multiple testing strategies:
 Unit tests are written using [Vitest](https://vitest.dev/) with React Testing Library. Tests mirror the source structure in `tests/`:
 
 ```bash
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 pnpm test
 ```
 
@@ -134,7 +134,7 @@ pnpm test
 E2E tests use [Playwright](https://playwright.dev/) and are located in `tests-e2e/`:
 
 ```bash
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 pnpm test-e2e          # Run tests headless
 pnpm test-e2e:ui       # Run with Playwright UI
 ```
@@ -151,7 +151,7 @@ pnpm playwright:install:ci
 Run TypeScript type checking:
 
 ```bash
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 pnpm typecheck
 ```
 
@@ -188,4 +188,4 @@ Pull requests automatically trigger:
 
 ### Community and Communication
 
-Join the conversation on the [CNCF Slack](https://slack.cncf.io/) in the `#serverless-workflow` channel.
+Join the conversation on the [CNCF Slack](https://slack.cncf.io/) in the `#open-workflow` channel.
