@@ -14,7 +14,7 @@
    limitations under the License.
 -->
 
-# @serverlessworkflow/diagram-editor
+# @openworkflowspec/diagram-editor
 
 Official visual diagram editor for the [Open Workflow Specification](https://github.com/serverlessworkflow/specification). A vendor-neutral, embeddable React component with strict separation between core logic and platform APIs.
 
@@ -30,11 +30,11 @@ npm install react@^19 react-dom@^19
 ## Installation
 
 ```bash
-npm install @serverlessworkflow/diagram-editor
+npm install @openworkflowspec/diagram-editor
 # or
-pnpm add @serverlessworkflow/diagram-editor
+pnpm add @openworkflowspec/diagram-editor
 # or
-yarn add @serverlessworkflow/diagram-editor
+yarn add @openworkflowspec/diagram-editor
 ```
 
 ### Usage
@@ -42,8 +42,8 @@ yarn add @serverlessworkflow/diagram-editor
 Basic example:
 
 ```tsx
-import { DiagramEditor } from '@serverlessworkflow/diagram-editor';
-import '@serverlessworkflow/diagram-editor/styles.css';
+import { DiagramEditor } from '@openworkflowspec/diagram-editor';
+import '@openworkflowspec/diagram-editor/styles.css';
 
 const workflowContent = `
 document:
@@ -83,7 +83,7 @@ function App() {
 
 ```bash
 # Navigate to the package
-cd packages/serverless-workflow-diagram-editor
+cd packages/open-workflow-diagram-editor
 
 # Install dependencies (or run from repo root)
 pnpm install
@@ -170,7 +170,7 @@ The shadcn CLI doesn't understand pnpm catalogs, so adding a component requires 
 1. **Generate the component**
 
    ```bash
-   cd packages/serverless-workflow-diagram-editor
+   cd packages/open-workflow-diagram-editor
    pnpm dlx shadcn@latest add <component>
    ```
 
