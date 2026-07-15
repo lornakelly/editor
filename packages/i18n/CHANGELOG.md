@@ -20,4 +20,6 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+   https://github.com/serverlessworkflow/sdk-java/blob/0c96a26482365ed3a90101c36d59c40e35c74a6c/mermaid/src/main/java/io/serverlessworkflow/mermaid/MermaidGraph.java#L71
 -->

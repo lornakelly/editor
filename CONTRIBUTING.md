@@ -18,7 +18,7 @@
 
 Thank you for your interest in contributing to the Open Workflow Editor! We welcome all types of contributions, including bug reports, feature requests, documentation improvements, and code changes.
 
-This project is the official, vendor-neutral visual editor for the [Open Workflow Specification](https://github.com/serverlessworkflow/specification).
+This project is the official, vendor-neutral visual editor for the [Open Workflow Specification](https://github.com/open-workflow-specification/specification).
 
 ---
 

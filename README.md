@@ -16,7 +16,7 @@
 
 # editor
 
-The official **vendor-neutral visual editor** for the [Open Workflow Specification](https://github.com/serverlessworkflow/specification).
+The official **vendor-neutral visual editor** for the [Open Workflow Specification](https://github.com/open-workflow-specification/specification).
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CNCF Sandbox](https://img.shields.io/badge/CNCF-Sandbox-informational)](https://www.cncf.io/projects/serverless-workflow/)
@@ -231,5 +231,5 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Related Projects
 
-- [Open Workflow Specification](https://github.com/serverlessworkflow/specification)
+- [Open Workflow Specification](https://github.com/open-workflow-specification/specification)
 - [Open Workflow SDK (TypeScript)](https://github.com/serverlessworkflow/sdk-typescript)

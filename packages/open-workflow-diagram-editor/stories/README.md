@@ -74,5 +74,5 @@ The following features have been identified as potential additions for future it
 ## Resources
 
 - [Storybook Documentation](https://storybook.js.org/docs/)
-- [Open Workflow Specification](https://github.com/serverlessworkflow/specification)
+- [Open Workflow Specification](https://github.com/open-workflow-specification/specification)
 - [TypeScript SDK](https://github.com/serverlessworkflow/sdk-typescript)

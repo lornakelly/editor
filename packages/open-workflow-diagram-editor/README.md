@@ -16,7 +16,7 @@
 
 # @openworkflowspec/diagram-editor
 
-Official visual diagram editor for the [Open Workflow Specification](https://github.com/serverlessworkflow/specification). A vendor-neutral, embeddable React component with strict separation between core logic and platform APIs.
+Official visual diagram editor for the [Open Workflow Specification](https://github.com/open-workflow-specification/specification). A vendor-neutral, embeddable React component with strict separation between core logic and platform APIs.
 
 ## Getting Started
 

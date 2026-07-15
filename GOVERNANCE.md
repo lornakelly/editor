@@ -16,13 +16,13 @@
 
 # Governance
 
-The Open Workflow Editor is a sub-project of the [Open Workflow Specification](https://github.com/serverlessworkflow/specification).
+The Open Workflow Editor is a sub-project of the [Open Workflow Specification](https://github.com/open-workflow-specification/specification).
 
 As a CNCF project, we strictly follow the governance model, roles, and decision-making processes defined in the parent repository.
 
 Please refer to the primary governance document for details on contributor roles, maintainer appointments, and project policies:
 
-👉 **[Open Workflow Specification Governance](https://github.com/serverlessworkflow/specification/blob/main/GOVERNANCE.md)**
+👉 **[Open Workflow Specification Governance](https://github.com/open-workflow-specification/specification/blob/main/GOVERNANCE.md)**
 
 ---
 

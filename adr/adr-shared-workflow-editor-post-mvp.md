@@ -18,7 +18,7 @@
 
 **Status:** Proposed
 
-> This ADR sets out the **post-MVP roadmap** for the Open Workflow editor - how it grows from the existing read-only viewer into a full visual authoring tool. The MVP (read-only visualisation) is covered by the prior [ADR](https://github.com/serverlessworkflow/specification/blob/main/adr/v1.0-adr-shared-workflow-editor.md) and assumed here as the starting point.
+> This ADR sets out the **post-MVP roadmap** for the Open Workflow editor - how it grows from the existing read-only viewer into a full visual authoring tool. The MVP (read-only visualisation) is covered by the prior [ADR](https://github.com/open-workflow-specification/specification/blob/main/adr/v1.0-adr-shared-workflow-editor.md) and assumed here as the starting point.
 
 ## Purpose
 
@@ -95,5 +95,5 @@ The same shared package is embedded into target tools. This work is **self-conta
 
 ## References
 
-- [Prior MVP ADR](https://github.com/serverlessworkflow/specification/blob/main/adr/v1.0-adr-shared-workflow-editor.md)
-- [Open Workflow specification](https://github.com/serverlessworkflow/specification)
+- [Prior MVP ADR](https://github.com/open-workflow-specification/specification/blob/main/adr/v1.0-adr-shared-workflow-editor.md)
+- [Open Workflow specification](https://github.com/open-workflow-specification/specification)
