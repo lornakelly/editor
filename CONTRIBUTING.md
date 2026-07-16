@@ -55,7 +55,7 @@ This project uses the following technology stack:
 - **Language**: [TypeScript](https://www.typescriptlang.org/) with strict mode enabled
 - **UI Library**: [React](https://react.dev/)
 - **Diagram Rendering**: [@xyflow/react](https://reactflow.dev/) (isolated in `src/react-flow/`)
-- **Workflow SDK**: [@serverlessworkflow/sdk](https://github.com/serverlessworkflow/sdk-typescript) (isolated in `src/core/`)
+- **Workflow SDK**: [@openworkflowspec/sdk](https://github.com/open-workflow-specification/sdk-typescript) (isolated in `src/core/`)
 - **Testing**: [Vitest](https://vitest.dev/) for unit tests, [Playwright](https://playwright.dev/) for E2E
 - **Linting**: [oxlint](https://oxc.rs/) with TypeScript, React, import, and jsx-a11y plugins
 - **Formatting**: [oxfmt](https://oxc.rs/)

@@ -17,7 +17,7 @@
 import { render, screen } from "@testing-library/react";
 import { vi, it, expect, afterEach, describe } from "vitest";
 import * as RF from "@xyflow/react";
-import { GraphNodeType } from "@serverlessworkflow/sdk";
+import { GraphNodeType } from "@openworkflowspec/sdk";
 import { ReactFlowNodeTypes } from "../../../src/react-flow/nodes/Nodes";
 import {
   containerNodeConfigMap,

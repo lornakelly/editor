@@ -18,7 +18,7 @@ import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import { WorkflowInfoView } from "../../src/side-panel/WorkflowInfoView";
 import { renderWithProviders } from "../test-utils/render-helpers";
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 
 const baseDocument: Specification.Document = {
   dsl: "1.0.3",

@@ -16,7 +16,7 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 import * as RF from "@xyflow/react";
-import { FlatGraphNode, GraphNodeType, Specification } from "@serverlessworkflow/sdk";
+import { FlatGraphNode, GraphNodeType, Specification } from "@openworkflowspec/sdk";
 import {
   getEdgeType,
   edgeSourceAndTargetExist,

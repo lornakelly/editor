@@ -18,7 +18,7 @@ import * as RF from "@xyflow/react";
 import { buildFlatGraph, getErrorNodeIds, type SdkError } from "../../core";
 import { BaseNodeData, ReactFlowNodeTypes } from "../nodes/Nodes";
 import { BaseEdgeData, EdgeTypes } from "../edges/Edges";
-import * as sdk from "@serverlessworkflow/sdk";
+import * as sdk from "@openworkflowspec/sdk";
 import { getNodeSize } from "./autoLayout";
 import { CATCH_CONTAINER_NODE_TYPE, isTerminalNodeType } from "../nodes/taskNodeConfig";
 

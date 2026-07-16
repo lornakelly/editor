@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { exportToMermaid } from "@/core";
 import { copyToClipboard } from "@/lib/clipboard";
 import { downloadFile } from "@/lib/download";
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 import { toast } from "sonner";
 
 export function MermaidActions({ model }: { model: Specification.Workflow }): React.JSX.Element {

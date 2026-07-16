@@ -4,8 +4,8 @@ catalog:
   "@changesets/changelog-github": ^0.7.0
   "@changesets/cli": ^2.31.0
   "@chromatic-com/storybook": ^5.2.0
+  "@openworkflowspec/sdk": "^1.0.3-alpha4"
   "@playwright/test": ^1.61.1
-  "@serverlessworkflow/sdk": ^1.0.3-alpha3
   "@storybook/addon-a11y": ^10.4.6
   "@storybook/addon-docs": ^10.4.6
   "@storybook/addon-vitest": ^10.4.6

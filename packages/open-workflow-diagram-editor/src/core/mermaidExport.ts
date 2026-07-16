@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { convertToMermaidCode } from "@serverlessworkflow/sdk";
-import type { Specification } from "@serverlessworkflow/sdk";
+import { convertToMermaidCode } from "@openworkflowspec/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 
 /**
  * Converts a workflow model to Mermaid diagram code

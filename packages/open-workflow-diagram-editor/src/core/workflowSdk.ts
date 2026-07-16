@@ -15,7 +15,7 @@
  */
 
 import { load } from "js-yaml";
-import * as sdk from "@serverlessworkflow/sdk";
+import * as sdk from "@openworkflowspec/sdk";
 import { fixNodesConnections } from "./graph";
 
 /**

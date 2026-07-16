@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { GraphNodeType } from "@serverlessworkflow/sdk";
+import { GraphNodeType } from "@openworkflowspec/sdk";
 import {
   AlertTriangle,
   ArrowRightLeft,

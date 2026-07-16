@@ -690,7 +690,7 @@ exports[`parseWorkflow > returns model and errors for invalid but parseable 'JSO
 {
   "errors": [
     {
-      "errorType": "'Workflow' is invalid",
+      "errorType": "Validation failed at '<root>' (Workflow): 'Workflow' is invalid",
       "message": "The DSL version of the workflow 'undefined' does not satisfy the DSL version range supported by this SDK '>=1.0.0 <=1.0.3'.",
     },
   ],
@@ -712,7 +712,7 @@ exports[`parseWorkflow > returns model and errors for invalid but parseable 'YAM
 {
   "errors": [
     {
-      "errorType": "'Workflow' is invalid",
+      "errorType": "Validation failed at '<root>' (Workflow): 'Workflow' is invalid",
       "message": "The DSL version of the workflow 'undefined' does not satisfy the DSL version range supported by this SDK '>=1.0.0 <=1.0.3'.",
     },
   ],
@@ -733,7 +733,7 @@ exports[`parseWorkflow > returns model and errors for invalid but parseable 'YAM
 exports[`validateWorkflow > returns parsed validation errors for an invalid workflow 1`] = `
 [
   {
-    "errorType": "'Workflow' is invalid",
+    "errorType": "Validation failed at '<root>' (Workflow): 'Workflow' is invalid",
     "message": "The DSL version of the workflow 'undefined' does not satisfy the DSL version range supported by this SDK '>=1.0.0 <=1.0.3'.",
   },
 ]

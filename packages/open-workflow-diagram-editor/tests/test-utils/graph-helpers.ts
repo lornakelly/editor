@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { FlatGraph, FlatGraphNode, GraphNodeType } from "@serverlessworkflow/sdk";
+import { FlatGraph, FlatGraphNode, GraphNodeType } from "@openworkflowspec/sdk";
 
 export function createFlatGraph(
   nodes: FlatGraphNode[],

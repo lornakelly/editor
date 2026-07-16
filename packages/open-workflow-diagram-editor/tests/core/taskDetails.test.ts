@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 import { describe, expect, it } from "vitest";
 import { getTaskDetails } from "../../src/core";
 

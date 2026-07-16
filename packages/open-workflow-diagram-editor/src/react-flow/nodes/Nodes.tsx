@@ -15,7 +15,7 @@
  */
 
 import type React from "react";
-import { GraphNodeType, type Specification } from "@serverlessworkflow/sdk";
+import { GraphNodeType, type Specification } from "@openworkflowspec/sdk";
 import * as RF from "@xyflow/react";
 import { useI18n } from "@openworkflowspec/i18n";
 import {

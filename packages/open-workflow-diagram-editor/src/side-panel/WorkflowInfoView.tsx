@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 import { useI18n } from "@openworkflowspec/i18n";
 import { InlineField, SectionHeader, StackedField } from "./Fields";
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";

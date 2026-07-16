@@ -15,7 +15,7 @@
  */
 
 import { it, expect, describe } from "vitest";
-import { GraphNodeType } from "@serverlessworkflow/sdk";
+import { GraphNodeType } from "@openworkflowspec/sdk";
 import {
   CATCH_CONTAINER_NODE_TYPE,
   type ContainerNodeType,

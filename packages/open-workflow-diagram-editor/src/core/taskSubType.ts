@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 
 function getFirstKey(obj: unknown): string | undefined {
   return obj && typeof obj === "object" && !Array.isArray(obj) ? Object.keys(obj)[0] : undefined;

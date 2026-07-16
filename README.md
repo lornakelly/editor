@@ -139,7 +139,7 @@ The main visual diagram editor component built with:
 - **TypeScript** (strict mode)
 - **React**
 - **[@xyflow/react](https://reactflow.dev/)** for diagram rendering (isolated in `src/react-flow/`)
-- **[@serverlessworkflow/sdk](https://github.com/serverlessworkflow/sdk-typescript)** (isolated in `src/core/`)
+- **[@openworkflowspec/sdk](https://github.com/open-workflow-specification/sdk-typescript)** (isolated in `src/core/`)
 - **[shadcn/ui](https://ui.shadcn.com/)** for UI primitives (with `dec:` Tailwind prefix)
 - **[Storybook](https://storybook.js.org/)** for component development
 - **[Vitest](https://vitest.dev/)** and **[Playwright](https://playwright.dev/)** for testing
@@ -154,7 +154,7 @@ Internationalization utilities used by the diagram editor.
 - **UI Framework**: [React](https://react.dev/)
 - **Diagram Library**: [@xyflow/react](https://reactflow.dev/) (React Flow)
 - **Auto Layout**: [ELK.js](https://eclipse.dev/elk/)
-- **Workflow SDK**: [@serverlessworkflow/sdk](https://github.com/serverlessworkflow/sdk-typescript)
+- **Workflow SDK**: [@openworkflowspec/sdk](https://github.com/open-workflow-specification/sdk-typescript)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Testing**: [Vitest](https://vitest.dev/), [Playwright](https://playwright.dev/)
@@ -232,4 +232,4 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 ## Related Projects
 
 - [Open Workflow Specification](https://github.com/open-workflow-specification/specification)
-- [Open Workflow SDK (TypeScript)](https://github.com/serverlessworkflow/sdk-typescript)
+- [Open Workflow SDK (TypeScript)](https://github.com/open-workflow-specification/sdk-typescript)

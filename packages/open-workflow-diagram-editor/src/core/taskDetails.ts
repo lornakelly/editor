@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 
 /* TaskBase: Common fields every task inherits (none required) (metadata is dropped for now) */
 const TASK_BASE_KEYS = new Set(["if", "input", "output", "export", "timeout", "then", "metadata"]);

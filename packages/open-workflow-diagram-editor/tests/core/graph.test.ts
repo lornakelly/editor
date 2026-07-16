@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { FlatGraphNode, GraphNodeType } from "@serverlessworkflow/sdk";
+import { FlatGraphNode, GraphNodeType } from "@openworkflowspec/sdk";
 import {
   getNodesByType,
   fixNodesConnections,

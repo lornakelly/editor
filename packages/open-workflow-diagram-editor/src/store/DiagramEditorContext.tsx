@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Specification } from "@serverlessworkflow/sdk";
+import type { Specification } from "@openworkflowspec/sdk";
 import * as React from "react";
 import type * as RF from "@xyflow/react";
 import type { SdkError } from "../core";
