@@ -75,10 +75,7 @@ function isNodeError(error: SdkError): error is NodeError {
 }
 
 /* Find the task owning this error path. Both sides are JSON pointers, so the longest matching taskReference is found by dropping trailing segments until one is known. */
-export function findOwningTaskReference(
-  path: string,
-  taskReferences: Set<string>,
-): string | undefined {
+function findOwningTaskReference(path: string, taskReferences: Set<string>): string | undefined {
   let candidate = path;
 
   while (candidate.length > 0) {

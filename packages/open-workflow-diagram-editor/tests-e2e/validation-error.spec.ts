@@ -61,7 +61,7 @@ test("a nested task's error marks the child node, not its container", async ({ p
 
   await childNode.click();
 
-  // Selecting the node opens the panel on that node's details..
+  // Selecting the node opens the panel on that node's details.
   await expect(page.locator('[data-slot="sidebar"]')).toHaveAttribute("data-state", "expanded");
   const nodeDetails = page.getByTestId("node-details");
   await expect(nodeDetails).toBeVisible();
