@@ -80,6 +80,7 @@
     "oxlint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-hook-form": "catalog:",
     "rimraf": "catalog:",
     "storybook": "catalog:",
     "tailwindcss": "catalog:",
