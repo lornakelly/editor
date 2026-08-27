@@ -7,10 +7,7 @@
     "typescript/no-explicit-any": "warn",
     "jsx-a11y/prefer-tag-over-role": "off",
     "jsx-a11y/click-events-have-key-events": "off",
-    "jsx-a11y/no-noninteractive-element-interactions": "off",
-    "react/refs": "off",
-    "react/set-state-in-effect": "off",
-    "react/purity": "off"
+    "jsx-a11y/no-noninteractive-element-interactions": "off"
   },
   "ignorePatterns": ["**/dist/", "**/dist-storybook/", "**/node_modules/"],
   "options": {
