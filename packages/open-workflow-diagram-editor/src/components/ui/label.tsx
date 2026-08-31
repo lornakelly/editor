@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-import type { DetailField } from "@/core/taskDetails";
-import { PropertyField } from "./Fields";
+import * as React from "react";
+import { Label as LabelPrimitive } from "radix-ui";
 
-/**
- * Static presentation of a task's flattened properties.
- */
-export function ReadOnlyProperties({ fields }: { fields: DetailField[] }) {
+import { cn } from "@/lib/utils";
+
+function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
-    <dl>
-      {fields.map((field) => (
-        <PropertyField key={field.label} field={field} />
-      ))}
-    </dl>
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "dec:flex dec:items-center dec:gap-2 dec:text-sm dec:leading-none dec:font-medium dec:select-none dec:group-data-[disabled=true]:pointer-events-none dec:group-data-[disabled=true]:opacity-50 dec:peer-disabled:cursor-not-allowed dec:peer-disabled:opacity-50",
+        className,
+      )}
+      {...props}
+    />
   );
 }
+
+export { Label };

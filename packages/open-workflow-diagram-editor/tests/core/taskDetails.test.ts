@@ -30,9 +30,9 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "call", kind: "scalar", value: "http" },
-      { path: "with.method", kind: "scalar", value: "GET" },
-      { path: "with.url", kind: "scalar", value: "http://example.com" },
+      { label: "call", segments: ["call"], kind: "scalar", value: "http" },
+      { label: "with.method", segments: ["with", "method"], kind: "scalar", value: "GET" },
+      { label: "with.url", segments: ["with", "url"], kind: "scalar", value: "http://example.com" },
     ]);
   });
 
@@ -43,9 +43,9 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "set.foo", kind: "scalar", value: "bar" },
-      { path: "if", kind: "runtime-expression", value: "${ .ok }" },
-      { path: "then", kind: "scalar", value: "continue" },
+      { label: "set.foo", segments: ["set", "foo"], kind: "scalar", value: "bar" },
+      { label: "if", segments: ["if"], kind: "scalar", value: "${ .ok }" },
+      { label: "then", segments: ["then"], kind: "scalar", value: "continue" },
     ]);
   });
 
@@ -61,11 +61,16 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "set.x", kind: "scalar", value: 1 },
-      { path: "input.from", kind: "scalar", value: "${ .input }" },
-      { path: "output.as", kind: "scalar", value: "${ .output }" },
-      { path: "export.as", kind: "scalar", value: "${ .export }" },
-      { path: "timeout.after", kind: "duration", value: "${ .timeout }" },
+      { label: "set.x", segments: ["set", "x"], kind: "scalar", value: 1 },
+      { label: "input.from", segments: ["input", "from"], kind: "scalar", value: "${ .input }" },
+      { label: "output.as", segments: ["output", "as"], kind: "scalar", value: "${ .output }" },
+      { label: "export.as", segments: ["export", "as"], kind: "scalar", value: "${ .export }" },
+      {
+        label: "timeout.after",
+        segments: ["timeout", "after"],
+        kind: "scalar",
+        value: "${ .timeout }",
+      },
     ]);
   });
 
@@ -77,8 +82,18 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "timeout.after.minutes", kind: "scalar", value: 5 },
-      { path: "timeout.after.seconds", kind: "scalar", value: 30 },
+      {
+        label: "timeout.after.minutes",
+        segments: ["timeout", "after", "minutes"],
+        kind: "scalar",
+        value: 5,
+      },
+      {
+        label: "timeout.after.seconds",
+        segments: ["timeout", "after", "seconds"],
+        kind: "scalar",
+        value: 30,
+      },
     ]);
   });
 
@@ -89,7 +104,9 @@ describe("getTaskDetails", () => {
       }),
     );
 
-    expect(fields).toEqual([{ path: "timeout", kind: "duration", value: "MyTimeout" }]);
+    expect(fields).toEqual([
+      { label: "timeout", segments: ["timeout"], kind: "scalar", value: "MyTimeout" },
+    ]);
   });
 
   it.each([{ length: 0 }, { length: 1 }, { length: 2 }])(
@@ -100,7 +117,9 @@ describe("getTaskDetails", () => {
       }));
       const fields = getTaskDetails(asTask({ switch: items }));
 
-      expect(fields).toEqual([{ path: "switch", kind: "array", count: length }]);
+      expect(fields).toEqual([
+        { label: "switch", segments: ["switch"], kind: "array", count: length },
+      ]);
     },
   );
 
@@ -123,8 +142,17 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "with.a.b.client.name", kind: "scalar", value: "foo" },
-      { path: "with.a.b.client.config", kind: "object" },
+      {
+        label: "with.a.b.client.name",
+        segments: ["with", "a", "b", "client", "name"],
+        kind: "scalar",
+        value: "foo",
+      },
+      {
+        label: "with.a.b.client.config",
+        segments: ["with", "a", "b", "client", "config"],
+        kind: "object",
+      },
     ]);
   });
 
@@ -136,7 +164,7 @@ describe("getTaskDetails", () => {
       }),
     );
 
-    expect(fields).toEqual([{ path: "set.x", kind: "scalar", value: 1 }]);
+    expect(fields).toEqual([{ label: "set.x", segments: ["set", "x"], kind: "scalar", value: 1 }]);
   });
 
   it("returns no fields for a task with no displayable fields", () => {
@@ -154,7 +182,9 @@ describe("getTaskDetails", () => {
       }),
     );
 
-    expect(fields).toEqual([{ path: "set.c", kind: "scalar", value: "value" }]);
+    expect(fields).toEqual([
+      { label: "set.c", segments: ["set", "c"], kind: "scalar", value: "value" },
+    ]);
   });
 
   it("converts boolean values to text", () => {
@@ -168,8 +198,8 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "set.enabled", kind: "scalar", value: true },
-      { path: "set.disabled", kind: "scalar", value: false },
+      { label: "set.enabled", segments: ["set", "enabled"], kind: "scalar", value: true },
+      { label: "set.disabled", segments: ["set", "disabled"], kind: "scalar", value: false },
     ]);
   });
 
@@ -236,7 +266,7 @@ describe("getTaskDetails", () => {
       }),
     );
 
-    expect(fields).toEqual([{ path: "call", kind: "scalar", value: 123 }]);
+    expect(fields).toEqual([{ label: "call", segments: ["call"], kind: "scalar", value: 123 }]);
   });
 
   it("flattens fields exactly at the maximum supported depth", () => {
@@ -256,7 +286,8 @@ describe("getTaskDetails", () => {
 
     expect(fields).toEqual([
       {
-        path: "with.a.b.c.value",
+        label: "with.a.b.c.value",
+        segments: ["with", "a", "b", "c", "value"],
         kind: "scalar",
         value: "foo",
       },
@@ -277,12 +308,12 @@ describe("getTaskDetails", () => {
     );
 
     expect(fields).toEqual([
-      { path: "if", kind: "runtime-expression", value: "${ .condition }" },
-      { path: "input.from", kind: "scalar", value: "${ .input }" },
-      { path: "output.as", kind: "scalar", value: "${ .output }" },
-      { path: "export.as", kind: "scalar", value: "${ .export }" },
-      { path: "timeout", kind: "duration", value: "PT5M" },
-      { path: "then", kind: "scalar", value: "next" },
+      { label: "if", segments: ["if"], kind: "scalar", value: "${ .condition }" },
+      { label: "input.from", segments: ["input", "from"], kind: "scalar", value: "${ .input }" },
+      { label: "output.as", segments: ["output", "as"], kind: "scalar", value: "${ .output }" },
+      { label: "export.as", segments: ["export", "as"], kind: "scalar", value: "${ .export }" },
+      { label: "timeout", segments: ["timeout"], kind: "scalar", value: "PT5M" },
+      { label: "then", segments: ["then"], kind: "scalar", value: "next" },
     ]);
   });
 
@@ -297,74 +328,26 @@ describe("getTaskDetails", () => {
 
     expect(fields).toEqual([]);
   });
+});
 
-  it("classifies shell commands as long-string fields", () => {
-    const fields = getTaskDetails(
-      asTask({
-        run: {
-          shell: {
-            command: 'echo "Hello World"',
-          },
-        },
-      }),
-    );
+describe("DetailField.segments", () => {
+  it("carries the unflattened key path alongside the display label", () => {
+    const fields = getTaskDetails(asTask({ call: "http", with: { method: "GET" } }));
 
     expect(fields).toEqual([
-      {
-        path: "run.shell.command",
-        kind: "long-string",
-        value: 'echo "Hello World"',
-      },
+      { label: "call", segments: ["call"], kind: "scalar", value: "http" },
+      { label: "with.method", segments: ["with", "method"], kind: "scalar", value: "GET" },
     ]);
   });
 
-  it("classifies script code as a long-string field", () => {
-    const fields = getTaskDetails(
-      asTask({
-        run: {
-          script: {
-            code: 'console.log("Hello World");',
-          },
-        },
-      }),
-    );
+  /* `set` is an arbitrary-key map: the key is user text, not a schema property. A key that
+     itself contains a dot joins to a label indistinguishable from real nesting, so the
+     segments — not the label — are the source of truth for the real document shape. */
+  it("keeps a dotted arbitrary map key as a single segment", () => {
+    const fields = getTaskDetails(asTask({ set: { "user.name": "ada" } }));
 
     expect(fields).toEqual([
-      {
-        path: "run.script.code",
-        kind: "long-string",
-        value: 'console.log("Hello World");',
-      },
+      { label: "set.user.name", segments: ["set", "user.name"], kind: "scalar", value: "ada" },
     ]);
-  });
-
-  it("extracts enum fields with their available options", () => {
-    const fields = getTaskDetails({
-      call: "http",
-      with: {
-        method: "GET",
-        endpoint: "https://example.com",
-        output: "content",
-      },
-    });
-
-    expect(fields).toContainEqual({
-      path: "with.output",
-      kind: "enum",
-      value: "content",
-      options: ["raw", "content", "response"],
-    });
-  });
-
-  it("classifies timeout as a duration field", () => {
-    const task = {
-      timeout: "PT30S",
-    } as Specification.Task;
-
-    expect(getTaskDetails(task)).toContainEqual({
-      path: "timeout",
-      kind: "duration",
-      value: "PT30S",
-    });
   });
 });

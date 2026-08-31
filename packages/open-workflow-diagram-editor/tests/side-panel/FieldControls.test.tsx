@@ -16,94 +16,99 @@
 
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { FormProvider, useForm } from "react-hook-form";
 import { FieldControl } from "../../src/side-panel/FieldControls";
-import type { DetailField } from "../../src/core/taskDetails";
+import type { EditableDetailField } from "../../src/side-panel/FieldControls";
 import { renderWithProviders } from "../test-utils/render-helpers";
+import { scalarField } from "../test-utils/detail-fields";
+
+/* `FieldControl` is bound to the surrounding draft, so it only renders inside a form. . */
+const DRAFT_NAME = "f0";
+
+function SingleFieldForm({
+  field,
+  onValues,
+}: {
+  field: EditableDetailField;
+  onValues?: (v: unknown) => void;
+}) {
+  const form = useForm({ defaultValues: { [DRAFT_NAME]: field.value } });
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={form.handleSubmit((values) => onValues?.(values))}>
+        <label htmlFor="control">{field.label}</label>
+        <FieldControl field={field} id="control" name={DRAFT_NAME} />
+        <button type="submit">submit</button>
+      </form>
+    </FormProvider>
+  );
+}
+
+const renderControl = (field: EditableDetailField, onValues?: (v: unknown) => void) =>
+  renderWithProviders(<SingleFieldForm field={field} onValues={onValues} />, { isReadOnly: false });
+
+const control = () => screen.getByLabelText("f");
+
+const field = (value: string | number | boolean) => scalarField("f", value) as EditableDetailField;
 
 describe("FieldControl", () => {
-  describe("scalar", () => {
-    const scalarCases: Array<[string, DetailField, string]> = [
-      ["string", { path: "call", kind: "scalar", value: "http" }, "http"],
-      ["number", { path: "with.port", kind: "scalar", value: 8080 }, "8080"],
-    ];
+  it("renders a string as a text input", () => {
+    renderControl(field("http"));
 
-    it.each(scalarCases)("renders a %s as a disabled input", (_label, field, displayed) => {
-      renderWithProviders(<FieldControl field={field} />);
-
-      const control = screen.getByDisplayValue(displayed);
-      expect(control.tagName).toBe("INPUT");
-      expect(control).toBeDisabled();
-    });
-
-    it("renders a number scalar as a number input", () => {
-      renderWithProviders(
-        <FieldControl field={{ path: "with.port", kind: "scalar", value: 8080 }} />,
-      );
-
-      expect(screen.getByDisplayValue("8080")).toHaveAttribute("type", "number");
-    });
-
-    it("renders a boolean as a disabled switch", () => {
-      renderWithProviders(
-        <FieldControl field={{ path: "fork.compete", kind: "scalar", value: true }} />,
-      );
-
-      const control = screen.getByRole("switch");
-      expect(control).toBeChecked();
-      expect(control).toBeDisabled();
-    });
+    expect(control().tagName).toBe("INPUT");
+    expect(control()).toHaveValue("http");
+    expect(control()).toBeEnabled();
   });
 
-  it("renders a long string as a disabled textarea", () => {
-    renderWithProviders(
-      <FieldControl field={{ path: "run.script.code", kind: "long-string", value: "echo hi" }} />,
-    );
+  it("renders a number as a number input", () => {
+    renderControl(field(8080));
 
-    const control = screen.getByDisplayValue("echo hi");
-    expect(control.tagName).toBe("TEXTAREA");
-    expect(control).toBeDisabled();
+    expect(control()).toHaveAttribute("type", "number");
   });
 
-  it("constrains a duration to the ISO 8601 format", () => {
-    renderWithProviders(
-      <FieldControl field={{ path: "timeout.after", kind: "duration", value: "PT5M" }} />,
-    );
+  it("submits an edited number as a number", async () => {
+    const user = userEvent.setup();
+    let submitted: unknown;
+    renderControl(field(8080), (v) => (submitted = v));
 
-    const control = screen.getByDisplayValue("PT5M");
-    expect(control).toBeDisabled();
-    expect(control).toHaveAttribute("pattern");
-    expect(control).toHaveAttribute("title", expect.stringContaining("ISO 8601"));
+    await user.clear(control());
+    await user.type(control(), "9090");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(submitted).toEqual({ f0: 9090 });
   });
 
-  it("renders an enum as a combobox showing the selected option", () => {
-    renderWithProviders(
-      <FieldControl
-        field={{
-          path: "with.output",
-          kind: "enum",
-          value: "content",
-          options: ["raw", "content", "response"],
-        }}
-      />,
-    );
+  it("renders a boolean as a switch", () => {
+    renderControl(field(true));
 
-    expect(screen.getByText("content")).toBeInTheDocument();
+    expect(screen.getByRole("switch")).toBeChecked();
   });
 
-  /* Arrays and objects are not editable in the panel — they report their shape and the
-     full value stays available in the Source section. */
-  it.each([
-    [1, "1 item"],
-    [3, "3 items"],
-  ])("summarises an array of %i as %s", (count, expected) => {
-    renderWithProviders(<FieldControl field={{ path: "switch", kind: "array", count }} />);
+  it("submits a toggled boolean as a boolean", async () => {
+    const user = userEvent.setup();
+    let submitted: unknown;
+    renderControl(field(true), (v) => (submitted = v));
 
-    expect(screen.getByText(expected)).toBeInTheDocument();
+    await user.click(screen.getByRole("switch"));
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(submitted).toEqual({ f0: false });
   });
 
-  it("renders an object as a placeholder glyph", () => {
-    renderWithProviders(<FieldControl field={{ path: "with.headers", kind: "object" }} />);
+  /* A shell command or script body needs room. Chosen from the value being multi-line rather
+   than from its key, so it holds for any such string. */
+  it("renders a multi-line string as a textarea", () => {
+    renderControl(field("line one\nline two"));
 
-    expect(screen.getByText("{...}")).toBeInTheDocument();
+    expect(control().tagName).toBe("TEXTAREA");
+  });
+
+  it("renders a single-line string as a text input", () => {
+    renderControl(field("${ .ok }"));
+
+    expect(control().tagName).toBe("INPUT");
+    expect(control()).toHaveValue("${ .ok }");
   });
 });
