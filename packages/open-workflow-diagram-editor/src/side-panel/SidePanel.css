@@ -186,6 +186,29 @@
     @apply dec:text-gray-100;
   }
 
+
+  .dec-root .dec-sidebar-prop-activator {
+    @apply dec:block dec:w-full dec:cursor-pointer dec:bg-transparent dec:text-left;
+  }
+
+  .dec-root .dec-sidebar-prop-activator:focus-visible {
+    outline: 1px solid rgb(var(--dec-selected-rgb));
+    outline-offset: -1px;
+  }
+
+  .dec-root .dec-sidebar-edit-fields {
+    @apply dec:gap-4 dec:py-1;
+  }
+
+  .dec-root .dec-sidebar-edit-field-label{
+    @apply dec:text-xs dec:font-normal dec:text-gray-500;
+    overflow-wrap: anywhere;
+  }
+
+    .dec-root.dark .dec-sidebar-edit-field-label{
+    @apply dec:text-gray-400;
+  }
+
   .dec-root .dec-sidebar-value {
     font-family: var(--dec-font-mono);
     overflow-wrap: anywhere;
@@ -205,7 +228,7 @@
 
   /* A shell command or a script body. Capped and scrollable so one thirty-line script cannot
      bury every row beneath it. */
-  .dec-root .dec-sidebar-value-block {
+  .dec-root .dec-sidebar-value-multiline {
     @apply dec:mt-0.5 dec:max-h-32 dec:overflow-auto dec:rounded-sm dec:bg-gray-100
       dec:px-2 dec:py-1.5 dec:text-xs dec:leading-relaxed dec:text-gray-800;
     font-family: var(--dec-font-mono);
@@ -213,7 +236,7 @@
     overflow-wrap: anywhere;
   }
 
-  .dec-root.dark .dec-sidebar-value-block {
+  .dec-root.dark .dec-sidebar-value-multiline {
     @apply dec:bg-gray-800/60 dec:text-gray-200;
   }
 

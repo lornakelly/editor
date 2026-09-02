@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-import type { DetailField } from "@/core/taskDetails";
-import { PropertyField } from "./Fields";
+import { DetailField } from "../../src/core";
 
-/**
- * Static presentation of a task's flattened properties.
- */
-export function ReadOnlyProperties({ fields }: { fields: DetailField[] }) {
-  return (
-    <dl>
-      {fields.map((field) => (
-        <PropertyField key={field.label} field={field} />
-      ))}
-    </dl>
-  );
-}
+export const scalarField = (
+  label: string,
+  value: string | number | boolean,
+  segments: string[] = [label],
+): DetailField => ({ label, kind: "scalar", value, segments });
+
+export const arrayField = (
+  label: string,
+  count: number,
+  segments: string[] = [label],
+): DetailField => ({ label, kind: "array", count, segments });
+
+export const objectField = (label: string, segments: string[] = [label]): DetailField => ({
+  label,
+  kind: "object",
+  segments,
+});

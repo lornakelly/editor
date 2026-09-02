@@ -19,6 +19,7 @@ import { screen } from "@testing-library/react";
 import { ReadOnlyProperties } from "../../src/side-panel/ReadOnlyProperties";
 import type { DetailField } from "../../src/core/taskDetails";
 import { renderWithProviders } from "../test-utils/render-helpers";
+import { arrayField, objectField, scalarField } from "../test-utils/detail-fields";
 
 const render = (...fields: DetailField[]) =>
   renderWithProviders(<ReadOnlyProperties fields={fields} />);
@@ -26,8 +27,8 @@ const render = (...fields: DetailField[]) =>
 describe("ReadOnlyProperties", () => {
   it("renders one labelled row per field", () => {
     const { container } = render(
-      { path: "call", kind: "scalar", value: "http" },
-      { path: "with.endpoint", kind: "scalar", value: "https://api.example.com" },
+      scalarField("call", "http"),
+      scalarField("with.endpoint", "https://api.example.com"),
     );
 
     expect(container.querySelectorAll(".dec-sidebar-prop")).toHaveLength(2);
@@ -35,47 +36,38 @@ describe("ReadOnlyProperties", () => {
     expect(screen.getByText("with.endpoint")).toBeInTheDocument();
   });
 
-  it.each([
-    ["scalar string", { path: "call", kind: "scalar", value: "http" }],
-    ["scalar number", { path: "with.port", kind: "scalar", value: 8080 }],
-    ["scalar boolean", { path: "fork.compete", kind: "scalar", value: true }],
-    ["enum", { path: "with.output", kind: "enum", value: "content", options: ["raw", "content"] }],
-    ["duration", { path: "timeout.after", kind: "duration", value: "PT5M" }],
-    ["runtime-expression", { path: "if", kind: "runtime-expression", value: "${ .ok }" }],
-    ["long-string", { path: "run.script.code", kind: "long-string", value: "echo hi" }],
-    ["array", { path: "switch", kind: "array", count: 3 }],
-    ["object", { path: "with.headers", kind: "object" }],
-  ] as Array<[string, DetailField]>)("renders no form control for a %s", (_label, field) => {
+  const everyKind: Array<[string, DetailField]> = [
+    ["scalar string", scalarField("call", "http")],
+    ["scalar number", scalarField("with.port", 8080)],
+    ["scalar boolean", scalarField("fork.compete", true)],
+    ["array", arrayField("switch", 3)],
+    ["object", objectField("with.headers")],
+  ];
+
+  it.each(everyKind)("renders no form control for a %s", (_label, field) => {
     const { container } = render(field);
 
     expect(container.querySelector("input, textarea, select, [role='switch']")).toBeNull();
   });
 
-  it.each([
-    ["a string", { path: "call", kind: "scalar", value: "http" }, "http"],
-    ["a number", { path: "with.port", kind: "scalar", value: 8080 }, "8080"],
-    ["a boolean as plain text", { path: "fork.compete", kind: "scalar", value: true }, "true"],
-    [
-      "an enum",
-      { path: "with.output", kind: "enum", value: "content", options: ["raw"] },
-      "content",
-    ],
-    ["a duration", { path: "timeout.after", kind: "duration", value: "PT5M" }, "PT5M"],
-    ["an expression", { path: "if", kind: "runtime-expression", value: "${ .ok }" }, "${ .ok }"],
-  ] as Array<[string, DetailField, string]>)(
-    "renders %s as its literal value",
-    (_l, field, text) => {
-      render(field);
+  const literalValues: Array<[string, DetailField, string]> = [
+    ["a string", scalarField("call", "http"), "http"],
+    ["a number", scalarField("with.port", 8080), "8080"],
+    ["a boolean as plain text", scalarField("fork.compete", true), "true"],
+    ["an expression", scalarField("if", "${ .ok }"), "${ .ok }"],
+  ];
 
-      expect(screen.getByText(text)).toBeInTheDocument();
-    },
-  );
+  it.each(literalValues)("renders %s as its literal value", (_l, field, text) => {
+    render(field);
+
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
 
   it("renders a long value in its own capped block", () => {
     const code = "const total = items.reduce((a, b) => a + b, 0);\nreturn total;";
-    const { container } = render({ path: "run.script.code", kind: "long-string", value: code });
+    const { container } = render(scalarField("run.script.code", code));
 
-    const block = container.querySelector(".dec-sidebar-value-block");
+    const block = container.querySelector(".dec-sidebar-value-multiline");
     expect(block).toBeInTheDocument();
     expect(block?.tagName).toBe("PRE");
     expect(block).toHaveTextContent("return total;");
@@ -86,13 +78,13 @@ describe("ReadOnlyProperties", () => {
     [1, "1 item"],
     [3, "3 items"],
   ])("summarises an array of %i as %s", (count, expected) => {
-    const { container } = render({ path: "switch", kind: "array", count });
+    const { container } = render(arrayField("switch", count));
 
     expect(container.querySelector(".dec-sidebar-value-shape")).toHaveTextContent(expected);
   });
 
   it("renders an object as a shape placeholder", () => {
-    const { container } = render({ path: "with.headers", kind: "object" });
+    const { container } = render(objectField("with.headers"));
 
     expect(container.querySelector(".dec-sidebar-value-shape")).toHaveTextContent("{...}");
   });
