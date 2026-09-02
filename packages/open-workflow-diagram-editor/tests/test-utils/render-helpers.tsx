@@ -77,14 +77,15 @@ export const renderWithProviders = (
 ) => {
   const mockContext = createMockContextValue(contextValue);
 
-  return render(
-    <ReactFlowProvider>
-      <DiagramEditorContext.Provider value={mockContext}>
-        <I18nProvider locale={mockContext.locale} dictionaries={{ en }}>
-          <SidebarProvider defaultOpen={true}>{ui}</SidebarProvider>
-        </I18nProvider>
-      </DiagramEditorContext.Provider>
-    </ReactFlowProvider>,
-    renderOptions,
+  const Providers = ({ children }: { children: React.ReactNode }) => (
+     <ReactFlowProvider>
+    <DiagramEditorContext.Provider value={mockContext}>
+      <I18nProvider locale={mockContext.locale} dictionaries={{ en }}>
+        <SidebarProvider defaultOpen={true}>{children}</SidebarProvider>
+      </I18nProvider>
+    </DiagramEditorContext.Provider>
+    </ReactFlowProvider>
   );
+
+  return render(ui, { wrapper: Providers, ...renderOptions });
 };

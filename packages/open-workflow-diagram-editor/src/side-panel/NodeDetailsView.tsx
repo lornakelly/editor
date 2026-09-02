@@ -58,7 +58,7 @@ export function NodeDetailsView({ node }: NodeDetailsViewProps) {
           {isReadOnly ? (
             <ReadOnlyProperties fields={fields} />
           ) : (
-            <EditableProperties fields={fields} />
+            <EditableProperties fields={fields} nodeId={node.id} />
           )}
         </>
       )}
