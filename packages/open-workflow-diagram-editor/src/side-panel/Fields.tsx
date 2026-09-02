@@ -35,10 +35,10 @@ export function InlineField({ label, value }: { label: string; value: string }) 
   );
 }
 
-export function PropertyField({ label, field }: { label: string; field: DetailField }) {
+export function PropertyField({ field }: { field: DetailField }) {
   return (
     <div className="dec-sidebar-prop">
-      <dt className="dec-sidebar-prop-label">{label}</dt>
+      <dt className="dec-sidebar-prop-label">{field.label}</dt>
       <dd className="dec-sidebar-prop-value">
         <PropertyValue field={field} />
       </dd>
@@ -66,6 +66,17 @@ export function YamlField({ yaml, summary = "{...}" }: { yaml: string; summary?:
   );
 }
 
+export function StaticPropertyRow({ field }: { field: DetailField }) {
+  return (
+    <div className="dec-sidebar-prop dec-sidebar-prop-static">
+      <span className="dec-sidebar-prop-label">{field.label}</span>
+      <span className="dec-sidebar-prop-value">
+        <PropertyValue field={field} />
+      </span>
+    </div>
+  );
+}
+
 export function PropertyValue({ field }: { field: DetailField }) {
   const { t } = useI18n();
 
@@ -80,12 +91,10 @@ export function PropertyValue({ field }: { field: DetailField }) {
     case "object":
       return <span className="dec-sidebar-value-shape">{"{...}"}</span>;
 
-    /* A shell command or a script body, which can run to dozens of lines. Its own block,
-       capped and scrollable, so one long value cannot bury every row beneath it. */
-    case "long-string":
-      return <pre className="dec-sidebar-value-block">{field.value}</pre>;
-
     default: {
+      if (typeof field.value === "string" && field.value.includes("\n")) {
+        return <pre className="dec-sidebar-value-multiline">{field.value}</pre>;
+      }
       const numeric = typeof field.value === "number";
       return (
         <span className={numeric ? "dec-sidebar-value numeric" : "dec-sidebar-value"}>

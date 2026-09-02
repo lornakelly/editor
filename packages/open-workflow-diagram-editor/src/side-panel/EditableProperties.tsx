@@ -14,16 +14,126 @@
  * limitations under the License.
  */
 
+import * as React from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import type { DetailField } from "@/core/taskDetails";
-import { ReadOnlyProperties } from "./ReadOnlyProperties";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { FieldControl } from "./FieldControls";
+import { PropertyValue, StaticPropertyRow } from "./Fields";
 
 /**
- * Editable presentation of a task's properties.
+ * Editable presentation of a task's properties. Display when isReadOnly={false}
  *
- * PLACEHOLDER. This change establishes the read-only/edit seam only, so the editable
- * branch currently renders the same static rows as read-only mode until we implement
+ * By default this renders the same static rows as read-only mode; edit mode is entered deliberately, by clicking a row, which
+ * also focuses it.
  *
  */
-export function EditableProperties({ fields }: { fields: DetailField[] }) {
-  return <ReadOnlyProperties fields={fields} />;
+
+type EditablePropertiesProps = {
+  fields: DetailField[];
+  nodeId: string;
+};
+
+/* react-hook-form field names and the keys of the draft  */
+type DraftValues = Record<string, unknown>;
+
+/* A unique string per field (f0, f1 etc) */
+function draftName(index: number): string {
+  return `f${index}`;
+}
+
+/* Creates a field name for each and maps each fieldname to its current value. Allows RHF to track changes (only scaler for now) */
+function toDraftValues(fields: DetailField[]): DraftValues {
+  const values: DraftValues = {};
+
+  fields.forEach((field, index) => {
+    if (field.kind === "scalar") {
+      values[draftName(index)] = field.value;
+    }
+  });
+
+  return values;
+}
+
+export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) {
+  const baseId = React.useId();
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [fieldToFocus, setFieldToFocus] = React.useState<string | null>(null);
+
+  const form = useForm<DraftValues>({ defaultValues: toDraftValues(fields) });
+
+  /* Reset on node change rather than remounting behind a `key`: `useForm` lives above the
+     rows, so remounting them alone would leave the previous node's values in the draft. */
+  const renderedNodeId = React.useRef(nodeId);
+  React.useEffect(() => {
+    if (renderedNodeId.current === nodeId) {
+      return;
+    }
+
+    renderedNodeId.current = nodeId;
+    form.reset(toDraftValues(fields));
+    setIsEditing(false);
+    setFieldToFocus(null);
+  }, [nodeId, fields, form]);
+
+  /* Deferred to an effect because the control does not exist until edit mode has rendered. */
+  React.useEffect(() => {
+    if (!isEditing || fieldToFocus === null) {
+      return;
+    }
+
+    form.setFocus(fieldToFocus);
+    setFieldToFocus(null);
+  }, [isEditing, fieldToFocus, form]);
+
+  const activateField = (name: string) => {
+    form.reset(toDraftValues(fields));
+    setIsEditing(true);
+    setFieldToFocus(name);
+  };
+
+  return (
+    <FormProvider {...form}>
+      {isEditing ? (
+        <FieldGroup className="dec-sidebar-edit-fields">
+          {fields.map((field, index) => {
+            if (field.kind !== "scalar") {
+              return <StaticPropertyRow key={draftName(index)} field={field} />;
+            }
+
+            const controlId = `${baseId}-${index}`;
+
+            return (
+              <Field key={draftName(index)}>
+                <label htmlFor={controlId} className="dec-sidebar-edit-field-label">
+                  {field.label}
+                </label>
+                <FieldControl field={field} id={controlId} name={draftName(index)} />
+              </Field>
+            );
+          })}
+        </FieldGroup>
+      ) : (
+        <div className="dec-sidebar-props">
+          {fields.map((field, index) =>
+            field.kind === "scalar" ? (
+              <button
+                key={draftName(index)}
+                type="button"
+                className="dec-sidebar-prop dec-sidebar-prop-activator"
+                onClick={() => activateField(draftName(index))}
+              >
+                <span className="dec-sidebar-prop-label">{field.label}</span>
+                <span className="dec-sidebar-prop-value">
+                  <PropertyValue field={field} />
+                </span>
+              </button>
+            ) : (
+              <StaticPropertyRow key={draftName(index)} field={field} />
+            ),
+          )}
+        </div>
+      )}
+    </FormProvider>
+  );
 }
