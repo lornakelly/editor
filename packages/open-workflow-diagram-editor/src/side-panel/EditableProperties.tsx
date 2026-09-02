@@ -98,13 +98,13 @@ export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) 
         <FieldGroup className="dec-sidebar-edit-fields">
           {fields.map((field, index) => {
             if (field.kind !== "scalar") {
-              return <StaticPropertyRow key={field.label} field={field} />;
+              return <StaticPropertyRow key={draftName(index)} field={field} />;
             }
 
             const controlId = `${baseId}-${index}`;
 
             return (
-              <Field key={field.label}>
+              <Field key={draftName(index)}>
                 <label htmlFor={controlId} className="dec-sidebar-edit-field-label">
                   {field.label}
                 </label>
@@ -118,7 +118,7 @@ export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) 
           {fields.map((field, index) =>
             field.kind === "scalar" ? (
               <button
-                key={field.label}
+                key={draftName(index)}
                 type="button"
                 className="dec-sidebar-prop dec-sidebar-prop-activator"
                 onClick={() => activateField(draftName(index))}
@@ -129,7 +129,7 @@ export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) 
                 </span>
               </button>
             ) : (
-              <StaticPropertyRow key={field.label} field={field} />
+              <StaticPropertyRow key={draftName(index)} field={field} />
             ),
           )}
         </div>

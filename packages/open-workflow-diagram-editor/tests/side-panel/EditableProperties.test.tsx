@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EditableProperties } from "../../src/side-panel/EditableProperties";
@@ -98,15 +98,18 @@ describe("EditableProperties", () => {
       expect(screen.getByLabelText("with.port")).toHaveAttribute("type", "number");
     });
 
-    it("edits a key that itself contains a dot", async () => {
-      const user = userEvent.setup();
-      renderEditable([scalarField("set.user.name", "ada", ["set", "user.name"])]);
-
-      await user.click(screen.getByText("ada"));
-      await user.clear(screen.getByLabelText("set.user.name"));
-      await user.type(screen.getByLabelText("set.user.name"), "grace");
-
-      expect(screen.getByLabelText("set.user.name")).toHaveValue("grace");
+    it("keeps fields with the same label but different segments distinct", () => {
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      renderEditable([
+        scalarField("set.user.name", "aaa", ["set", "user", "name"]),
+        scalarField("set.user.name", "bbb", ["set", "user.name"]),
+      ]);
+      expect(
+        consoleError.mock.calls.some(([message]) =>
+          String(message).includes("Encountered two children with the same key"),
+        ),
+      ).toBe(false);
+      consoleError.mockRestore();
     });
   });
 

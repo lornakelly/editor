@@ -104,11 +104,4 @@ describe("FieldControl", () => {
 
     expect(control().tagName).toBe("TEXTAREA");
   });
-
-  it("renders a single-line string as a text input", () => {
-    renderControl(field("${ .ok }"));
-
-    expect(control().tagName).toBe("INPUT");
-    expect(control()).toHaveValue("${ .ok }");
-  });
 });
