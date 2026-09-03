@@ -24,6 +24,7 @@ import {
 import { SidebarProvider } from "../../src/components/ui/sidebar";
 import { ReactFlowProvider } from "@xyflow/react";
 import { en } from "../../src/i18n/locales/en";
+import { EditSessionProvider } from "../../src/side-panel/EditSession";
 
 const noop = () => {};
 
@@ -53,6 +54,7 @@ export const createMockContextValue = (
   setSelectedNodeId: noop,
   setIsExporting: noop,
   setContent: noop,
+  commitWorkflow: noop,
 
   // --- history defaults ---
   submitModel: noop,
@@ -81,7 +83,8 @@ export const renderWithProviders = (
      <ReactFlowProvider>
     <DiagramEditorContext.Provider value={mockContext}>
       <I18nProvider locale={mockContext.locale} dictionaries={{ en }}>
-        <SidebarProvider defaultOpen={true}>{children}</SidebarProvider>
+        <SidebarProvider defaultOpen={true}>
+          <EditSessionProvider>{children}</EditSessionProvider></SidebarProvider>
       </I18nProvider>
     </DiagramEditorContext.Provider>
     </ReactFlowProvider>

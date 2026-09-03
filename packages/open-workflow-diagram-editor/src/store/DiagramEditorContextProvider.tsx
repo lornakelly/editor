@@ -21,6 +21,7 @@ import {
   getTaskReferences,
   parseWorkflow,
   serializeWorkflow,
+  validateWorkflow,
 } from "../core";
 import type { Specification } from "@openworkflowspec/sdk";
 import { DiagramEditorProps, DiagramEditorRef } from "../diagram-editor/DiagramEditor";
@@ -154,6 +155,17 @@ export const DiagramEditorContextProvider = React.forwardRef<
     [seedModel],
   );
 
+  const commitWorkflow = React.useCallback(
+    (workflow: Specification.Workflow) => {
+      // TODO: Temporary - Errors still computed here by validating full workflow, Open question on how to tackle this - a form knows about one task, but these areas are for entire workflow
+      setErrors(validateWorkflow(workflow));
+      const resolvedId = resolveSelectedId(workflow, selectedNodeIdRef.current);
+      setSelectedNodeId(resolvedId);
+      seedModel(workflow, { x: 0, y: 0, zoom: 1 }, resolvedId);
+    },
+    [seedModel]
+  );
+
   // Bind setSelectedNodeId into undo/redo wrappers via direct callback.
   // This keeps selection restore atomic with the history dispatch.
   const undo = React.useCallback(() => {
@@ -201,6 +213,7 @@ export const DiagramEditorContextProvider = React.forwardRef<
       setContent,
       isExporting,
       setIsExporting,
+      commitWorkflow,
     }),
     [
       isReadOnly,
@@ -226,6 +239,7 @@ export const DiagramEditorContextProvider = React.forwardRef<
       setContent,
       isExporting,
       setIsExporting,
+      commitWorkflow,
     ],
   );
 
