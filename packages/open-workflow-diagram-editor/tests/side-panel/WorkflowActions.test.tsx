@@ -17,16 +17,17 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MermaidActions } from "../../src/side-panel/MermaidActions";
+import { WorkflowActions } from "../../src/side-panel/WorkflowActions";
 import { parseWorkflow } from "../../src/core/workflowSdk";
 import { renderWithProviders } from "../test-utils/render-helpers";
 import { WORKFLOW_WITH_METADATA_JSON } from "../fixtures/workflows";
 import * as clipboard from "../../src/lib/clipboard";
 import * as core from "../../src/core";
 import * as download from "../../src/lib/download";
+import * as exportPng from "../../src/lib/exportPng";
 import * as sonner from "sonner";
 
-describe("MermaidActions", () => {
+describe("WorkflowActions", () => {
   const toastMock = vi.fn();
   const MERMAID_CODE = "mermaid code";
 
@@ -41,7 +42,7 @@ describe("MermaidActions", () => {
     const copySpy = vi.spyOn(clipboard, "copyToClipboard").mockResolvedValue(undefined);
     vi.spyOn(core, "exportToMermaid").mockReturnValue(MERMAID_CODE);
 
-    renderWithProviders(<MermaidActions model={model!} />, { model });
+    renderWithProviders(<WorkflowActions model={model!} />, { model });
 
     const copyButton = screen.getByRole("button", {
       name: /Copy Mermaid Code/i,
@@ -60,7 +61,7 @@ describe("MermaidActions", () => {
     vi.spyOn(sonner.toast, "error").mockImplementation(toastMock);
     vi.spyOn(sonner.toast, "success").mockImplementation(toastMock);
 
-    renderWithProviders(<MermaidActions model={model!} />, { model });
+    renderWithProviders(<WorkflowActions model={model!} />, { model });
 
     const copyButton = screen.getByRole("button", {
       name: /Copy Mermaid Code/i,
@@ -79,7 +80,7 @@ describe("MermaidActions", () => {
     vi.spyOn(sonner.toast, "error").mockImplementation(toastMock);
     vi.spyOn(sonner.toast, "success").mockImplementation(toastMock);
 
-    renderWithProviders(<MermaidActions model={model!} />, { model });
+    renderWithProviders(<WorkflowActions model={model!} />, { model });
 
     const downloadButton = screen.getByRole("button", {
       name: /Download as Mermaid File/i,
@@ -101,7 +102,7 @@ describe("MermaidActions", () => {
     vi.spyOn(sonner.toast, "error").mockImplementation(toastMock);
     vi.spyOn(sonner.toast, "success").mockImplementation(toastMock);
 
-    renderWithProviders(<MermaidActions model={model!} />, { model });
+    renderWithProviders(<WorkflowActions model={model!} />, { model });
 
     const downloadButton = screen.getByRole("button", {
       name: /Download as Mermaid File/i,
@@ -110,5 +111,48 @@ describe("MermaidActions", () => {
     await user.click(downloadButton);
 
     expect(toastMock).toHaveBeenCalledWith(expect.any(String), { description: "Download error" });
+  });
+
+  it("should disable the PNG button when isExporting is true", () => {
+    const { model } = parseWorkflow(WORKFLOW_WITH_METADATA_JSON);
+
+    renderWithProviders(<WorkflowActions model={model!} />, { model, isExporting: true });
+
+    expect(screen.getByRole("button", { name: /Download as PNG/i })).toBeDisabled();
+  });
+
+  it("should call exportDiagramAsPng with sanitized filename and show success toast", async () => {
+    const user = userEvent.setup();
+    const { model } = parseWorkflow(WORKFLOW_WITH_METADATA_JSON);
+    const exportSpy = vi.spyOn(exportPng, "exportDiagramAsPng").mockResolvedValue(undefined);
+    const setIsExporting = vi.fn();
+    vi.spyOn(sonner.toast, "error").mockImplementation(toastMock);
+    vi.spyOn(sonner.toast, "success").mockImplementation(toastMock);
+
+    renderWithProviders(<WorkflowActions model={model!} />, { model, setIsExporting });
+
+    await user.click(screen.getByRole("button", { name: /Download as PNG/i }));
+    await vi.waitFor(() => expect(exportSpy).toHaveBeenCalled());
+
+    expect(exportSpy).toHaveBeenCalledWith(expect.anything(), "test-wf.png", null);
+    expect(toastMock).toHaveBeenCalledWith(expect.any(String));
+    expect(setIsExporting).toHaveBeenCalledWith(true);
+    expect(setIsExporting).toHaveBeenLastCalledWith(false);
+  });
+
+  it("should show error toast and still reset isExporting when PNG export fails", async () => {
+    const user = userEvent.setup();
+    const { model } = parseWorkflow(WORKFLOW_WITH_METADATA_JSON);
+    vi.spyOn(exportPng, "exportDiagramAsPng").mockRejectedValue(new Error("Export failed"));
+    const setIsExporting = vi.fn();
+    vi.spyOn(sonner.toast, "error").mockImplementation(toastMock);
+    vi.spyOn(sonner.toast, "success").mockImplementation(toastMock);
+
+    renderWithProviders(<WorkflowActions model={model!} />, { model, setIsExporting });
+
+    await user.click(screen.getByRole("button", { name: /Download as PNG/i }));
+    await vi.waitFor(() => expect(setIsExporting).toHaveBeenLastCalledWith(false));
+
+    expect(toastMock).toHaveBeenCalledWith(expect.any(String), { description: "Export failed" });
   });
 });

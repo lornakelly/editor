@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type * as React from "react";
 import { render, type RenderOptions } from "@testing-library/react";
 import { I18nProvider } from "@openworkflowspec/i18n";
 import {
@@ -21,6 +22,7 @@ import {
   type DiagramEditorContextType,
 } from "../../src/store/DiagramEditorContext";
 import { SidebarProvider } from "../../src/components/ui/sidebar";
+import { ReactFlowProvider } from "@xyflow/react";
 import { en } from "../../src/i18n/locales/en";
 import { EditSessionProvider } from "../../src/side-panel/EditSession";
 
@@ -43,12 +45,14 @@ export const createMockContextValue = (
   edges: [],
   taskReferences: new Set(),
   selectedNodeId: null,
+  isExporting: false,
 
   // --- dispatch defaults ---
   setLocale: noop,
   setEdges: noop,
   setNodes: noop,
   setSelectedNodeId: noop,
+  setIsExporting: noop,
   setContent: noop,
   commitWorkflow: noop,
 
@@ -76,12 +80,14 @@ export const renderWithProviders = (
   const mockContext = createMockContextValue(contextValue);
 
   const Providers = ({ children }: { children: React.ReactNode }) => (
+      <ReactFlowProvider>
     <DiagramEditorContext.Provider value={mockContext}>
       <I18nProvider locale={mockContext.locale} dictionaries={{ en }}>
         <SidebarProvider defaultOpen={true}>
           <EditSessionProvider>{children}</EditSessionProvider></SidebarProvider>
       </I18nProvider>
     </DiagramEditorContext.Provider>
+    </ReactFlowProvider>
   );
 
   return render(ui, { wrapper: Providers, ...renderOptions });

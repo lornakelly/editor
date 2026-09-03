@@ -63,6 +63,7 @@ export const Diagram = ({ divRef, colorMode = "light" }: DiagramProps) => {
     submitModel,
     pendingViewportRestore,
     clearPendingViewportRestore,
+    isExporting,
   } = useDiagramEditorContext();
 
   const [minimapVisible, setMinimapVisible] = React.useState(false);
@@ -223,7 +224,7 @@ export const Diagram = ({ divRef, colorMode = "light" }: DiagramProps) => {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onSelectionChange={onSelectionChange}
-          onlyRenderVisibleElements={true}
+          onlyRenderVisibleElements={!isExporting}
           zoomOnDoubleClick={false}
           elementsSelectable={true}
           panOnScroll={true}

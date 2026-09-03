@@ -28,7 +28,7 @@ import {
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";
 import { WorkflowInfoView } from "@/side-panel/WorkflowInfoView";
 import { NodeDetailsView } from "@/side-panel/NodeDetailsView";
-import { MermaidActions } from "@/side-panel/MermaidActions";
+import { WorkflowActions } from "@/side-panel/WorkflowActions";
 import { getNodeVisualConfig } from "@/react-flow/nodes/taskNodeConfig";
 import type { BaseNodeData } from "@/react-flow/nodes/Nodes";
 import "./SidePanel.css";
@@ -107,7 +107,7 @@ export function SidePanel() {
       </SidebarContent>
       {model !== null && selectedNodeId === null ? (
         <SidebarFooter aria-label={t("aria.panel.exportActions")}>
-          <MermaidActions model={model} />
+          <WorkflowActions model={model} />
         </SidebarFooter>
       ) : null}
       { selectedNode !== null ? <EditFormFooter node={selectedNode} /> : null }
