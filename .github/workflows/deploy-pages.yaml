@@ -75,13 +75,30 @@ jobs:
       # Only an immutable tag may be deployed -- that is the point of the job.
       - name: Verify the ref is a tag
         working-directory: ${{ env.RELEASE_DIR }}
+        env:
+          # Via env rather than inline `${{ }}` so the value cannot be
+          # interpreted as shell.
+          REF: ${{ inputs.ref }}
         run: |
           set -euo pipefail
-          if ! git describe --exact-match --tags HEAD >/dev/null 2>&1; then
-            echo "::error::'${{ inputs.ref }}' is not a git tag. Only released tags may be deployed."
+          # Check that the INPUT names a tag, not merely that HEAD happens to
+          # carry one: right after a release, main's tip IS the tagged commit,
+          # so a HEAD-based check would silently accept a branch.
+          #
+          # `show-ref --verify` takes a literal ref path and does NOT interpret
+          # revision expressions, so `<tag>~1` cannot slip through as a commit
+          # reachable from a real tag. Only once the literal tag is known to
+          # exist is it safe to dereference it.
+          if ! git show-ref --verify --quiet "refs/tags/${REF}"; then
+            echo "::error::'${REF}' is not a git tag. Only released tags may be deployed."
             exit 1
           fi
-          echo "Deploying tag: $(git describe --exact-match --tags HEAD)"
+          if [ "$(git rev-parse --verify HEAD)" \
+             != "$(git rev-parse --verify "refs/tags/${REF}^{commit}")" ]; then
+            echo "::error::HEAD does not match tag '${REF}'."
+            exit 1
+          fi
+          echo "Deploying tag: ${REF}"
 
       - name: Setup CI
         uses: ./.github/actions/setup-ci
@@ -131,6 +148,7 @@ jobs:
           fi
 
       - name: Stage this release
+        id: stage
         env:
           VERSION: ${{ steps.version.outputs.version }}
           STABLE: ${{ steps.version.outputs.stable }}
@@ -146,32 +164,53 @@ jobs:
           cp -R "${BUILD}/." "${PAGES}/${VERSION}/"
 
           # `latest` only ever moves forward. A patch released from a 1.0.x
-          # maintenance branch must not clobber a newer `latest`.
-          if [ "${STABLE}" = "true" ]; then
-            HIGHEST="$(
-              cd "${PAGES}" && for d in */; do echo "${d%/}"; done \
-                | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-                | sort -V | tail -1
-            )"
-            if [ "${HIGHEST}" = "${VERSION}" ]; then
-              rm -rf "${PAGES}/latest"
-              cp -R "${PAGES}/${VERSION}" "${PAGES}/latest"
-              echo "latest -> ${VERSION}"
-            else
-              echo "Keeping latest at ${HIGHEST} (${VERSION} is older)."
-            fi
-          else
+          # maintenance branch must not clobber a newer `latest`. Only stable
+          # version directories are candidates, so a prerelease never wins.
+          # `|| true` because grep exits 1 when no stable release exists yet
+          # (e.g. a prerelease is the first thing ever deployed), and under
+          # `pipefail` that would abort the step.
+          HIGHEST="$(
+            cd "${PAGES}" && for d in */; do echo "${d%/}"; done \
+              | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } \
+              | sort -V | tail -1
+          )"
+          if [ "${STABLE}" != "true" ]; then
             echo "${VERSION} is a prerelease -- latest untouched."
+            # `none` rather than "" so the summary cannot render "still ``".
+            LATEST_STATE="prerelease"; LATEST_VERSION="${HIGHEST:-none}"
+          elif [ "${HIGHEST}" = "${VERSION}" ]; then
+            rm -rf "${PAGES}/latest"
+            cp -R "${PAGES}/${VERSION}" "${PAGES}/latest"
+            echo "latest -> ${VERSION}"
+            LATEST_STATE="moved"; LATEST_VERSION="${VERSION}"
+          else
+            echo "Keeping latest at ${HIGHEST} (${VERSION} is older)."
+            LATEST_STATE="kept"; LATEST_VERSION="${HIGHEST}"
           fi
+          # Surfaced in the job summary: on a maintenance or prerelease deploy
+          # "latest did not move" is the most important outcome of the run, and
+          # must not require reading the step log to discover.
+          echo "latest_state=${LATEST_STATE}" >> "$GITHUB_OUTPUT"
+          echo "latest_version=${LATEST_VERSION}" >> "$GITHUB_OUTPUT"
 
-          # Send the site root to the current release. A browsable index of all
-          # versions is deliberately left to a follow-up.
-          cat > "${PAGES}/index.html" <<'HTML'
+          # Send the site root to `latest`, falling back to the version just
+          # deployed when no stable release exists yet -- otherwise the root
+          # would redirect to a 404. A browsable index of all versions is
+          # deliberately left to a follow-up.
+          # The link text names what the root actually points at: "the latest
+          # release" is false in the fallback case, and the anchor is what a
+          # reader sees if the meta refresh is blocked.
+          if [ -d "${PAGES}/latest" ]; then
+            ROOT_TARGET="latest"; ROOT_LABEL="Open the latest release"
+          else
+            ROOT_TARGET="${VERSION}"; ROOT_LABEL="Open ${VERSION}"
+          fi
+          cat > "${PAGES}/index.html" <<HTML
           <!doctype html>
           <meta charset="utf-8" />
           <title>Open Workflow Editor</title>
-          <meta http-equiv="refresh" content="0; url=./latest/" />
-          <a href="./latest/">Open the latest release</a>
+          <meta http-equiv="refresh" content="0; url=./${ROOT_TARGET}/" />
+          <a href="./${ROOT_TARGET}/">${ROOT_LABEL}</a>
           HTML
 
           # Serve the directory as-is instead of running it through Jekyll,
@@ -199,20 +238,35 @@ jobs:
 
       - name: Summary
         env:
+          REF: ${{ inputs.ref }}
           VERSION: ${{ steps.version.outputs.version }}
+          LATEST_STATE: ${{ steps.stage.outputs.latest_state }}
+          LATEST_VERSION: ${{ steps.stage.outputs.latest_version }}
         run: |
           set -euo pipefail
           # Derived, not hardcoded, so a fork reports its own Pages URL.
           OWNER="$(echo "${GITHUB_REPOSITORY%%/*}" | tr '[:upper:]' '[:lower:]')"
           REPO="${GITHUB_REPOSITORY#*/}"
           BASE="https://${OWNER}.github.io/${REPO}"
+
+          if [ "${LATEST_VERSION}" = "none" ]; then
+            LATEST_CELL="**not created** -- no stable release has been deployed yet"
+          else
+            case "${LATEST_STATE}" in
+              moved) LATEST_CELL="updated to \`${LATEST_VERSION}\`" ;;
+              kept)  LATEST_CELL="**unchanged** -- still \`${LATEST_VERSION}\`, which is newer than this release" ;;
+              *)     LATEST_CELL="**unchanged** -- still \`${LATEST_VERSION}\` (this is a prerelease)" ;;
+            esac
+          fi
+
           {
             echo "### Deployed to GitHub Pages"
             echo
-            echo "| | |"
-            echo "|---|---|"
-            echo "| Tag | \`${{ inputs.ref }}\` |"
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Tag | \`${REF}\` |"
             echo "| Version | \`${VERSION}\` |"
+            echo "| \`latest\` | ${LATEST_CELL} |"
             echo "| This version | ${BASE}/${VERSION}/ |"
             echo "| Site root | ${BASE}/ |"
           } >> "$GITHUB_STEP_SUMMARY"
