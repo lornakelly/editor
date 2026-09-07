@@ -39,10 +39,49 @@ On merge, the publish workflow automatically (no manual action needed):
 - Builds and tests packages
 - Publishes to npm
 - Creates git tags and GitHub releases
+- Deploys the Storybook to GitHub Pages, built from the new tag
 
 Check CI run at: [https://github.com/open-workflow-specification/editor/actions/workflows/publish-release.yaml](https://github.com/open-workflow-specification/editor/actions/workflows/publish-release.yaml)  
 GH Releases: [https://github.com/open-workflow-specification/editor/releases](https://github.com/open-workflow-specification/editor/releases)  
-NPM publishing at: [https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions](https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions)
+NPM publishing at: [https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions](https://www.npmjs.com/package/@openworkflowspec/diagram-editor?activeTab=versions)  
+GitHub Pages: [https://open-workflow-specification.github.io/editor/](https://open-workflow-specification.github.io/editor/)
+
+---
+
+# GitHub Pages Deployment
+
+Every release is published to GitHub Pages by `.github/workflows/deploy-pages.yaml`, run as the
+final job of the publish workflow.
+
+## What gets deployed
+
+The Storybook build, made from the **git tag** just published — never from `main`. The deployed
+site therefore shows only what is on npm. Unreleased work on `main` keeps its Netlify preview
+(see `netlify.toml`) and never reaches Pages.
+
+## Layout
+
+Deployments live on the `gh-pages` branch and are permanent — nothing is ever deleted:
+
+```
+/                 redirects to /latest/
+/1.1.0/           permanent, immutable
+/1.2.0/
+/latest/          copy of the highest stable release
+```
+
+Link to `/latest/` for a URL that follows releases, or to a specific version for one that never
+changes.
+
+`latest` only ever moves **forward**: a patch released from a `1.0.x` maintenance branch does not
+overwrite a newer `latest`, and a prerelease never becomes `latest`.
+
+## Deploying a tag manually
+
+To backfill an older release or redeploy after a failed run, run the
+["Release :: Deploy to GitHub Pages"](https://github.com/open-workflow-specification/editor/actions/workflows/deploy-pages.yaml)
+workflow with the tag, e.g. `@openworkflowspec/diagram-editor@1.1.0`. Only tags are accepted —
+the workflow refuses a branch. Redeploying an already-published tag is safe.
 
 ---
 

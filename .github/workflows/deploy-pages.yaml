@@ -1,0 +1,218 @@
+#
+# Copyright 2021-Present The Open Workflow Specification Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: "Release :: Deploy to GitHub Pages"
+
+# Publishes the Storybook of a RELEASED version to GitHub Pages.
+#
+# Always built from the exact git tag, never from `main`, so the deployed site
+# shows only what is on npm. Unreleased work on `main` keeps its Netlify
+# preview (see netlify.toml) and never reaches Pages.
+#
+# Each release lands in its own permanent directory (/1.0.0/, /1.1.0/, ...);
+# `latest/` is a copy of the highest stable release. Nothing is ever deleted.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git tag to build and deploy."
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git tag to build and deploy (e.g. @openworkflowspec/diagram-editor@1.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# Serialise deploys so two releases cannot race on the same branch.
+concurrency:
+  group: deploy-pages
+  cancel-in-progress: false
+
+env:
+  EDITOR_PACKAGE_NAME: "@openworkflowspec/diagram-editor"
+  EDITOR_PACKAGE_DIR: "packages/open-workflow-diagram-editor"
+  PAGES_BRANCH: "gh-pages"
+  # The released source is checked out here, kept apart from the deploy tooling
+  # at the workspace root. They are different vintages on purpose: the tooling
+  # must be this workflow's version, the source must be the tag's.
+  RELEASE_DIR: "release"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # This workflow's own ref, for the deploy tooling. Deploying an old tag
+      # must not mean running that tag's CI actions.
+      - name: Checkout deploy tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout released tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          path: ${{ env.RELEASE_DIR }}
+
+      # Only an immutable tag may be deployed -- that is the point of the job.
+      - name: Verify the ref is a tag
+        working-directory: ${{ env.RELEASE_DIR }}
+        run: |
+          set -euo pipefail
+          if ! git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "::error::'${{ inputs.ref }}' is not a git tag. Only released tags may be deployed."
+            exit 1
+          fi
+          echo "Deploying tag: $(git describe --exact-match --tags HEAD)"
+
+      - name: Setup CI
+        uses: ./.github/actions/setup-ci
+
+      - name: Read released version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./${RELEASE_DIR}/${EDITOR_PACKAGE_DIR}/package.json').version")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          # A prerelease must never become `latest`.
+          case "$VERSION" in
+            *-*) echo "stable=false" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "stable=true"  >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "Version: ${VERSION}"
+
+      - name: Install dependencies
+        working-directory: ${{ env.RELEASE_DIR }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Build editor and Storybook
+        working-directory: ${{ env.RELEASE_DIR }}
+        run: |
+          set -euo pipefail
+          pnpm -F "${EDITOR_PACKAGE_NAME}..." build:dev
+          pnpm -F "${EDITOR_PACKAGE_NAME}" build:storybook
+
+      # Done by hand rather than with actions/checkout because the branch does
+      # not exist on the first run and has to be created as an orphan.
+      - name: Checkout gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/pages"
+          cd "${RUNNER_TEMP}/pages"
+          git init -q
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth=1 origin "${PAGES_BRANCH}" 2>/dev/null; then
+            git checkout -q FETCH_HEAD
+            git checkout -q -B "${PAGES_BRANCH}"
+            echo "Existing ${PAGES_BRANCH} checked out."
+          else
+            git checkout -q --orphan "${PAGES_BRANCH}"
+            echo "No ${PAGES_BRANCH} yet -- creating it."
+          fi
+
+      - name: Stage this release
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          STABLE: ${{ steps.version.outputs.stable }}
+        run: |
+          set -euo pipefail
+          PAGES="${RUNNER_TEMP}/pages"
+          BUILD="${GITHUB_WORKSPACE}/${RELEASE_DIR}/${EDITOR_PACKAGE_DIR}/dist-storybook"
+
+          # Redeploying a tag must be idempotent, so the version directory is
+          # replaced wholesale rather than merged into.
+          rm -rf "${PAGES:?}/${VERSION:?}"
+          mkdir -p "${PAGES}/${VERSION}"
+          cp -R "${BUILD}/." "${PAGES}/${VERSION}/"
+
+          # `latest` only ever moves forward. A patch released from a 1.0.x
+          # maintenance branch must not clobber a newer `latest`.
+          if [ "${STABLE}" = "true" ]; then
+            HIGHEST="$(
+              cd "${PAGES}" && for d in */; do echo "${d%/}"; done \
+                | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+                | sort -V | tail -1
+            )"
+            if [ "${HIGHEST}" = "${VERSION}" ]; then
+              rm -rf "${PAGES}/latest"
+              cp -R "${PAGES}/${VERSION}" "${PAGES}/latest"
+              echo "latest -> ${VERSION}"
+            else
+              echo "Keeping latest at ${HIGHEST} (${VERSION} is older)."
+            fi
+          else
+            echo "${VERSION} is a prerelease -- latest untouched."
+          fi
+
+          # Send the site root to the current release. A browsable index of all
+          # versions is deliberately left to a follow-up.
+          cat > "${PAGES}/index.html" <<'HTML'
+          <!doctype html>
+          <meta charset="utf-8" />
+          <title>Open Workflow Editor</title>
+          <meta http-equiv="refresh" content="0; url=./latest/" />
+          <a href="./latest/">Open the latest release</a>
+          HTML
+
+          # Serve the directory as-is instead of running it through Jekyll,
+          # which would drop any path segment starting with "_".
+          touch "${PAGES}/.nojekyll"
+
+      - name: Publish to gh-pages
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}/pages"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed -- ${VERSION} is already deployed."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "deploy: ${EDITOR_PACKAGE_NAME}@${VERSION} to GitHub Pages
+
+          Signed-off-by: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          git push -q origin "${PAGES_BRANCH}"
+          echo "Pushed ${VERSION} to ${PAGES_BRANCH}."
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Derived, not hardcoded, so a fork reports its own Pages URL.
+          OWNER="$(echo "${GITHUB_REPOSITORY%%/*}" | tr '[:upper:]' '[:lower:]')"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          BASE="https://${OWNER}.github.io/${REPO}"
+          {
+            echo "### Deployed to GitHub Pages"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Tag | \`${{ inputs.ref }}\` |"
+            echo "| Version | \`${VERSION}\` |"
+            echo "| This version | ${BASE}/${VERSION}/ |"
+            echo "| Site root | ${BASE}/ |"
+          } >> "$GITHUB_STEP_SUMMARY"

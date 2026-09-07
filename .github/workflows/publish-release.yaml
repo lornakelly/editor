@@ -37,6 +37,9 @@ jobs:
       github.event.pull_request.title == 'chore: version packages' &&
       startsWith(github.event.pull_request.head.ref, 'changeset-release/')
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
+      tag: ${{ steps.released-tag.outputs.tag }}
     steps:
       - name: Checkout release branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,6 +59,30 @@ jobs:
         run: pnpm build:prod
 
       - name: Publish to npm
+        id: publish
         uses: changesets/action@8488615a623b1b9c987934bb89eae8af6a946ac1 # v2.1.1
         with:
           publish: pnpm changeset publish
+
+      # changeset publish tags the commit it just published. Reconstruct that
+      # tag name so the Pages deploy builds from it rather than from the
+      # branch, which is free to move on afterwards.
+      - name: Resolve released tag
+        id: released-tag
+        if: steps.publish.outputs.published == 'true'
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./packages/open-workflow-diagram-editor/package.json').version")"
+          echo "tag=@openworkflowspec/diagram-editor@${VERSION}" >> "$GITHUB_OUTPUT"
+
+  # Publishes the released Storybook to GitHub Pages. Gated on `published` so
+  # Pages only moves when npm does -- a re-run that publishes nothing
+  # redeploys nothing.
+  deploy-pages:
+    needs: publish
+    if: needs.publish.outputs.published == 'true'
+    uses: ./.github/workflows/deploy-pages.yaml
+    permissions:
+      contents: write
+    with:
+      ref: ${{ needs.publish.outputs.tag }}
