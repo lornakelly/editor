@@ -72,8 +72,8 @@ jobs:
         if: steps.publish.outputs.published == 'true'
         run: |
           set -euo pipefail
-          VERSION="$(node -p "require('./packages/open-workflow-diagram-editor/package.json').version")"
-          echo "tag=@openworkflowspec/diagram-editor@${VERSION}" >> "$GITHUB_OUTPUT"
+          VERSION="$(node -p "require('./${{ vars.PREVIEW_PACKAGE_DIR }}/package.json').version")"
+          echo "tag={{ vars.PREVIEW_PACKAGE_NAME }}@${VERSION}" >> "$GITHUB_OUTPUT"
 
   # Publishes the released Storybook to GitHub Pages. Gated on `published` so
   # Pages only moves when npm does -- a re-run that publishes nothing
