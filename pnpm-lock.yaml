@@ -81,6 +81,9 @@ catalogs:
     '@xyflow/react':
       specifier: ^12.11.5
       version: 12.11.5
+    allof-merge:
+      specifier: ^0.6.8
+      version: 0.6.8
     class-variance-authority:
       specifier: ^0.7.1
       version: 0.7.1
@@ -319,6 +322,9 @@ importers:
       '@xyflow/react':
         specifier: 'catalog:'
         version: 12.11.5(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      allof-merge:
+        specifier: 'catalog:'
+        version: 0.6.8
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1
