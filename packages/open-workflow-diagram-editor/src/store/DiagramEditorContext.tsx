@@ -29,11 +29,13 @@ export type DiagramEditorContextType = {
   edges: RF.Edge[];
   taskReferences: Set<string>;
   selectedNodeId: string | null;
+  isExporting: boolean;
 
   setLocale: React.Dispatch<React.SetStateAction<string>>;
   setNodes: React.Dispatch<React.SetStateAction<RF.Node[]>>;
   setEdges: React.Dispatch<React.SetStateAction<RF.Edge[]>>;
   setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+  setIsExporting: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Undo/redo — history API
   submitModel: (
