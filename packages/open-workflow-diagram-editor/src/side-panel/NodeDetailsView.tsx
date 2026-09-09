@@ -17,9 +17,11 @@
 import type * as RF from "@xyflow/react";
 import { dump } from "js-yaml";
 import { useI18n } from "@openworkflowspec/i18n";
-import { getTaskDetails, type DetailField } from "@/core/taskDetails";
+import { getTaskDetails } from "@/core/taskDetails";
 import type { BaseNodeData } from "@/react-flow/nodes/Nodes";
-import { YamlField, PropertyField, SectionHeader } from "./Fields";
+import { YamlField, SectionHeader } from "./Fields";
+import { ReadOnlyProperties } from "./ReadOnlyProperties";
+import { EditableProperties } from "./EditableProperties";
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";
 import { getNodeErrorField, getNodeErrors } from "@/core";
 import { ErrorSection } from "./ErrorsSection";
@@ -27,27 +29,6 @@ import { ErrorSection } from "./ErrorsSection";
 type NodeDetailsViewProps = {
   node: RF.Node<BaseNodeData>;
 };
-
-const OBJECT_GLYPH = "{...}";
-
-function itemCount(length: number): string {
-  return `${length} item${length === 1 ? "" : "s"}`;
-}
-
-function fieldText(field: DetailField): string {
-  switch (field.kind) {
-    case "array":
-      return itemCount(field.count);
-    case "text":
-      return field.display;
-    case "object":
-      return OBJECT_GLYPH;
-  }
-}
-
-function FieldRow({ label, field }: { label: string; field: DetailField }) {
-  return <PropertyField label={label} value={fieldText(field)} />;
-}
 
 export function NodeDetailsView({ node }: NodeDetailsViewProps) {
   const { t } = useI18n();
@@ -74,11 +55,11 @@ export function NodeDetailsView({ node }: NodeDetailsViewProps) {
       {fields.length > 0 && (
         <>
           <SectionHeader label={t("sidebar.sectionProperties")} />
-          <dl>
-            {fields.map((field) => (
-              <FieldRow key={field.path} label={field.path} field={field} />
-            ))}
-          </dl>
+          {isReadOnly ? (
+            <ReadOnlyProperties fields={fields} />
+          ) : (
+            <EditableProperties fields={fields} nodeId={node.id} />
+          )}
         </>
       )}
       {isReadOnly && task !== undefined && (

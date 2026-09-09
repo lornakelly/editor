@@ -56,6 +56,8 @@ export type DiagramEditorContextType = {
    * `getContent()` calls.
    */
   setContent: (content: string) => void;
+  /* Editor originated changes*/
+  commitWorkflow: (workflow: Specification.Workflow) => void;
 };
 
 export const DiagramEditorContext = React.createContext<DiagramEditorContextType | undefined>(

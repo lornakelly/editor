@@ -53,6 +53,38 @@ describe("NodeDetailsView", () => {
     expect(screen.getByText("continue")).toBeInTheDocument();
   });
 
+  it("renders a number field as its literal value", () => {
+    const node = makeNode({
+      label: "step",
+      task: {
+        with: {
+          retries: 42,
+        },
+      },
+    });
+
+    renderWithProviders(<NodeDetailsView node={node} />);
+
+    expect(screen.getByText("with.retries")).toBeInTheDocument();
+    expect(screen.getByText("42")).toBeInTheDocument();
+  });
+
+  it("renders a boolean field as plain text", () => {
+    const node = makeNode({
+      label: "step",
+      task: {
+        with: {
+          enabled: true,
+        },
+      },
+    });
+
+    renderWithProviders(<NodeDetailsView node={node} />);
+
+    expect(screen.getByText("with.enabled")).toBeInTheDocument();
+    expect(screen.getByText("true")).toBeInTheDocument();
+  });
+
   it.each([
     { length: 1, text: "1 item" },
     { length: 2, text: "2 items" },
@@ -179,7 +211,10 @@ describe("NodeDetailsView", () => {
       renderWithProviders(<NodeDetailsView node={child} />, {
         taskReferences: new Set([containerReference, childReference]),
         errors: [
-          { path: `${childReference}/with`, message: "must have required property 'endpoint'" },
+          {
+            path: `${childReference}/with`,
+            message: "must have required property 'endpoint'",
+          },
         ],
       });
 
@@ -201,6 +236,39 @@ describe("NodeDetailsView", () => {
       expect(screen.queryByRole("heading", { name: "Source" })).not.toBeInTheDocument();
       expect(container.querySelector(".dec-sidebar-yaml-summary")).toBeNull();
       expect(container.querySelector(".dec-sidebar-yaml-pre")).toBeNull();
+    });
+  });
+
+  describe("read-only and editable modes", () => {
+    const node = makeNode({
+      label: "getPets",
+      task: {
+        call: "http",
+        with: { endpoint: "https://api.example.com" },
+      },
+    });
+
+    const modes = [
+      ["read-only", true],
+      ["editable", false],
+    ] as const;
+
+    /* The read-only/edit split is the same until the react-hook-form editor
+      lands, so both branches render the same property rows. */
+    it.each(modes)("renders the task's property rows in %s mode", (_mode, isReadOnly) => {
+      renderWithProviders(<NodeDetailsView node={node} />, { isReadOnly });
+
+      expect(screen.getByText("Properties")).toBeInTheDocument();
+      expect(screen.getByText("call")).toBeInTheDocument();
+      expect(screen.getByText("http")).toBeInTheDocument();
+      expect(screen.getByText("with.endpoint")).toBeInTheDocument();
+      expect(screen.getByText("https://api.example.com")).toBeInTheDocument();
+    });
+
+    it.each(modes)("renders no form controls in %s mode", (_mode, isReadOnly) => {
+      const { container } = renderWithProviders(<NodeDetailsView node={node} />, { isReadOnly });
+
+      expect(container.querySelector("input, textarea, select, [role='switch']")).toBeNull();
     });
   });
 });

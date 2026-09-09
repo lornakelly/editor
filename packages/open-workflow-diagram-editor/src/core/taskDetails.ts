@@ -22,11 +22,18 @@ const TASK_BASE_KEYS = new Set(["if", "input", "output", "export", "timeout", "t
 /* Number of object levels to expand into dot-notation rows */
 const MAX_DEPTH = 4;
 
-/* Flattened task row - kind: how the view should render it */
+/* Flattened task row"
+    - kind: how the view should render it 
+    - label: the dot-joined display label(`with.method`)
+    - segments: the real key path and source of truth 
+*/
+type DetailFieldBase = { label: string; segments: string[] };
+
 export type DetailField =
-  | { path: string; kind: "text"; display: string }
-  | { path: string; kind: "array"; count: number }
-  | { path: string; kind: "object" };
+  | (DetailFieldBase & { kind: "scalar"; value: string | number | boolean })
+  /* TODO: Temporary until rendering arrays and objects */
+  | (DetailFieldBase & { kind: "array"; count: number })
+  | (DetailFieldBase & { kind: "object" });
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -34,7 +41,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function flattenFields(
   value: unknown,
-  path: string = "",
+  segments: string[],
   depth: number = 0,
   outputFields: DetailField[] = [],
 ): void {
@@ -42,24 +49,35 @@ function flattenFields(
     return;
   }
 
+  const label = segments.join(".");
+
   if (Array.isArray(value)) {
-    outputFields.push({ path, kind: "array", count: value.length });
+    outputFields.push({ label, segments, kind: "array", count: value.length });
     return;
   }
 
   if (isPlainObject(value)) {
     if (depth >= MAX_DEPTH) {
       /* Too deep - bare path, full value available in Source */
-      outputFields.push({ path, kind: "object" });
+      outputFields.push({ label, segments, kind: "object" });
       return;
     }
 
     for (const [key, val] of Object.entries(value)) {
-      flattenFields(val, path ? `${path}.${key}` : key, depth + 1, outputFields);
+      flattenFields(val, [...segments, key], depth + 1, outputFields);
     }
+
     return;
   }
-  outputFields.push({ path, kind: "text", display: String(value) });
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    outputFields.push({
+      label,
+      segments,
+      kind: "scalar",
+      value,
+    });
+  }
 }
 
 /* Builds the flattened detail rows for a task: task-specific fields first, inherited base fields last */
@@ -73,32 +91,32 @@ export function getTaskDetails(task: Specification.Task): DetailField[] {
   // Handle timeout as it can be a string or an object (after)
   const timeoutSource =
     typeof record.timeout === "string"
-      ? { path: "timeout", value: record.timeout }
+      ? { segments: ["timeout"], value: record.timeout }
       : {
-          path: "timeout.after",
+          segments: ["timeout", "after"],
           value: nested("timeout")?.after,
         };
 
   /* Base fields, each labelled with its dsl path */
-  const baseSources: Array<{ path: string; value: unknown }> = [
-    { path: "if", value: record.if },
-    { path: "input.from", value: nested("input")?.from },
-    { path: "output.as", value: nested("output")?.as },
-    { path: "export.as", value: nested("export")?.as },
+  const baseSources: Array<{ segments: string[]; value: unknown }> = [
+    { segments: ["if"], value: record.if },
+    { segments: ["input", "from"], value: nested("input")?.from },
+    { segments: ["output", "as"], value: nested("output")?.as },
+    { segments: ["export", "as"], value: nested("export")?.as },
     timeoutSource,
-    { path: "then", value: record.then },
+    { segments: ["then"], value: record.then },
   ];
 
   const base: DetailField[] = [];
-  for (const { path, value } of baseSources) {
-    flattenFields(value, path, 0, base);
+  for (const { segments, value } of baseSources) {
+    flattenFields(value, segments, 0, base);
   }
 
   /* Top level keys (base keys and metadata excluded) */
   const specific: DetailField[] = [];
   for (const [key, value] of Object.entries(record)) {
     if (!TASK_BASE_KEYS.has(key)) {
-      flattenFields(value, key, 0, specific);
+      flattenFields(value, [key], 0, specific);
     }
   }
 
