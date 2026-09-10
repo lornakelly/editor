@@ -14,7 +14,22 @@
  * limitations under the License.
  */
 
-export { renderWithProviders } from "./render-helpers";
-export { t } from "./translation-helpers";
-export { createFlatGraph } from "./graph-helpers";
-export {nodeAt, parseFixture} from "./workflow-helpers";
+import { DetailField } from "../../src/core";
+
+export const scalarField = (
+  label: string,
+  value: string | number | boolean,
+  segments: string[] = [label],
+): DetailField => ({ label, kind: "scalar", value, segments });
+
+export const arrayField = (
+  label: string,
+  count: number,
+  segments: string[] = [label],
+): DetailField => ({ label, kind: "array", count, segments });
+
+export const objectField = (label: string, segments: string[] = [label]): DetailField => ({
+  label,
+  kind: "object",
+  segments,
+});

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import { useI18n } from "@openworkflowspec/i18n";
+import type { DetailField } from "@/core/taskDetails";
+
 export function SectionHeader({ label }: { label: string }) {
   return (
     <div className="dec-sidebar-section-header">
@@ -32,11 +35,13 @@ export function InlineField({ label, value }: { label: string; value: string }) 
   );
 }
 
-export function PropertyField({ label, value }: { label: string; value: string }) {
+export function PropertyField({ field }: { field: DetailField }) {
   return (
     <div className="dec-sidebar-prop">
-      <dt className="dec-sidebar-prop-label">{label}</dt>
-      <dd className="dec-sidebar-prop-value">{value}</dd>
+      <dt className="dec-sidebar-prop-label">{field.label}</dt>
+      <dd className="dec-sidebar-prop-value">
+        <PropertyValue field={field} />
+      </dd>
     </div>
   );
 }
@@ -59,4 +64,43 @@ export function YamlField({ yaml, summary = "{...}" }: { yaml: string; summary?:
       </details>
     </div>
   );
+}
+
+export function StaticPropertyRow({ field }: { field: DetailField }) {
+  return (
+    <div className="dec-sidebar-prop dec-sidebar-prop-static">
+      <span className="dec-sidebar-prop-label">{field.label}</span>
+      <span className="dec-sidebar-prop-value">
+        <PropertyValue field={field} />
+      </span>
+    </div>
+  );
+}
+
+export function PropertyValue({ field }: { field: DetailField }) {
+  const { t } = useI18n();
+
+  switch (field.kind) {
+    case "array":
+      return (
+        <span className="dec-sidebar-value-shape">
+          {`${field.count} ${t(field.count === 1 ? "sidebar.field.item" : "sidebar.field.items")}`}
+        </span>
+      );
+
+    case "object":
+      return <span className="dec-sidebar-value-shape">{"{...}"}</span>;
+
+    default: {
+      if (typeof field.value === "string" && field.value.includes("\n")) {
+        return <pre className="dec-sidebar-value-multiline">{field.value}</pre>;
+      }
+      const numeric = typeof field.value === "number";
+      return (
+        <span className={numeric ? "dec-sidebar-value numeric" : "dec-sidebar-value"}>
+          {String(field.value)}
+        </span>
+      );
+    }
+  }
 }

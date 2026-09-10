@@ -14,7 +14,18 @@
  * limitations under the License.
  */
 
-export { renderWithProviders } from "./render-helpers";
-export { t } from "./translation-helpers";
-export { createFlatGraph } from "./graph-helpers";
-export {nodeAt, parseFixture} from "./workflow-helpers";
+import type { DetailField } from "@/core/taskDetails";
+import { PropertyField } from "./Fields";
+
+/**
+ * Static presentation of a task's flattened properties.
+ */
+export function ReadOnlyProperties({ fields }: { fields: DetailField[] }) {
+  return (
+    <dl>
+      {fields.map((field) => (
+        <PropertyField key={field.label} field={field} />
+      ))}
+    </dl>
+  );
+}

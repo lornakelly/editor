@@ -15,11 +15,14 @@
  */
 
 export * from "./workflowSdk";
+export * from "./workflowEditing";
 export * from "./validationErrors";
-/* TEMPORARY — remove with the workaround; see the revert checklist in workflowSdk.ts. */
-export * from "./specWorkarounds";
 export * from "./graph";
 export * from "./taskDetails";
+export * from "./taskDraft";
 export * from "./taskSubType";
 export * from "./elkjs";
 export * from "./mermaidExport";
+export * from "./schemaFilter";
+/* TEMPORARY — remove with the workaround; see the revert checklist in workflowSdk.ts. */
+export * from "./specWorkarounds";

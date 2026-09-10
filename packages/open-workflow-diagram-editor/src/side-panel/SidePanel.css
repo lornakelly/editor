@@ -185,6 +185,124 @@
   .dec-root.dark .dec-sidebar-prop-value {
     @apply dec:text-gray-100;
   }
+
+
+  .dec-root .dec-sidebar-prop-activator {
+    @apply dec:block dec:w-full dec:cursor-pointer dec:bg-transparent dec:text-left;
+  }
+
+  .dec-root .dec-sidebar-prop-activator:focus-visible {
+    outline: 1px solid rgb(var(--dec-selected-rgb));
+    outline-offset: -1px;
+  }
+    /* End Property row */
+
+  /* Sidebar Footer */
+  .dec-root .dec-sidebar-form-footer{
+    @apply dec:-mx-2 dec:-mt-2 dec:flex dec:items-center dec:justify-between dec:gap-2 dec:border-t dec:border-gray-200 dec:px-3 dec:py-3;
+  }
+
+  .dec-root.dark .dec-sidebar-form-footer{
+    @apply dec:border-gray-700;
+  }
+
+  .dec-root .dec-sidebar-form-footer-status{
+    @apply dec:flex dec:min-w-0 dec:items-center dec:gap-1 dec:overflow-hidden dec:whitespace-nowrap dec:text-xs dec:font-medium;
+  }
+
+  .dec-root .dec-sidebar-form-footer-status.changed{
+    color: var(--dec-accent-text);
+  }
+
+  .dec-root .dec-sidebar-form-footer-status.applied{
+    color: var(--dec-success-text);
+    animation: dec-sidebar-status-in 140ms ease-out;
+  }
+
+  .dec-root .dec-sidebar-form-footer-status.nochanges{
+    @apply dec:font-normal dec:text-gray-500;
+  }
+
+  .dec-root.dark .dec-sidebar-form-footer-status.nochanges{
+    @apply dec:text-gray-400;
+  }
+
+  .dec-root.dark .dec-sidebar-form-footer-status-icon{
+    @apply dec:h-3.5 dec:w-3.5 dec:shrink-0;
+  }
+
+  @keyframes dec-sidebar-status-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion:reduce) {
+    .dec-root .dec-sidebar-form-footer-status.applied{
+      animation: none;
+    }
+  }
+
+  .dec-root .dec-sidebar-form-footer-actions{
+    @apply dec:flex dec:shrink-0 dec:items-center dec:gap-2;
+  }
+
+  .dec-root .dec-sidebar-form-footer-count{
+    @apply dec:min-w-0 dec:truncate dec:text-xs dec:font-medium dec:text-blue-600;
+  }
+
+  .dec-root.dark .dec-sidebar-form-footer-count{
+    @apply dec:text-blue-400;
+  }
+  /* End Sidebar Footer */
+
+  .dec-root .dec-sidebar-edit-fields {
+    @apply dec:gap-4 dec:py-1;
+  }
+
+  .dec-root .dec-sidebar-edit-field-label{
+    @apply dec:text-xs dec:font-normal dec:text-gray-500;
+    overflow-wrap: anywhere;
+  }
+
+    .dec-root.dark .dec-sidebar-edit-field-label{
+    @apply dec:text-gray-400;
+  }
+
+  .dec-root .dec-sidebar-value {
+    font-family: var(--dec-font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .dec-root .dec-sidebar-value.numeric {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dec-root .dec-sidebar-value-shape {
+    @apply dec:text-xs dec:text-gray-500 dec:italic;
+  }
+
+  .dec-root.dark .dec-sidebar-value-shape {
+    @apply dec:text-gray-400;
+  }
+
+  /* A shell command or a script body. Capped and scrollable so one thirty-line script cannot
+     bury every row beneath it. */
+  .dec-root .dec-sidebar-value-multiline {
+    @apply dec:mt-0.5 dec:max-h-32 dec:overflow-auto dec:rounded-sm dec:bg-gray-100
+      dec:px-2 dec:py-1.5 dec:text-xs dec:leading-relaxed dec:text-gray-800;
+    font-family: var(--dec-font-mono);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .dec-root.dark .dec-sidebar-value-multiline {
+    @apply dec:bg-gray-800/60 dec:text-gray-200;
+  }
+
   /* Stacked field (label above value) */
   .dec-root .dec-sidebar-stacked-field {
     @apply dec:py-1.5;
@@ -338,7 +456,7 @@
 
   .dec-root .dec-sidebar-error-field {
     @apply dec:text-sm dec:font-semibold dec:text-red-800;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: var(--dec-font-mono);
   }
 
   .dec-root .dec-sidebar-error-field::after {
