@@ -660,7 +660,7 @@ exports[`parseValidationErrorMessage > parses validation errors from workflow wi
 ]
 `;
 
-exports[`parseWorkflow > parses valid 'JSON' and returns model with no errors 1`] = `
+exports[`parseWorkflow > parses valid JSON and returns model with no errors 1`] = `
 {
   "errors": [],
   "model": Workflow {
@@ -683,7 +683,7 @@ exports[`parseWorkflow > parses valid 'JSON' and returns model with no errors 1`
 }
 `;
 
-exports[`parseWorkflow > parses valid 'YAML' and returns model with no errors 1`] = `
+exports[`parseWorkflow > parses valid YAML and returns model with no errors 1`] = `
 {
   "errors": [],
   "model": Workflow {
@@ -706,7 +706,7 @@ exports[`parseWorkflow > parses valid 'YAML' and returns model with no errors 1`
 }
 `;
 
-exports[`parseWorkflow > returns model and errors for invalid but parseable 'JSON' 1`] = `
+exports[`parseWorkflow > returns model and errors for invalid but parseable JSON 1`] = `
 {
   "errors": [
     {
@@ -728,7 +728,7 @@ exports[`parseWorkflow > returns model and errors for invalid but parseable 'JSO
 }
 `;
 
-exports[`parseWorkflow > returns model and errors for invalid but parseable 'YAML' 1`] = `
+exports[`parseWorkflow > returns model and errors for invalid but parseable YAML 1`] = `
 {
   "errors": [
     {

@@ -9,6 +9,9 @@ catalogs:
     '@base-ui/react':
       specifier: ^1.8.0
       version: 1.8.0
+    '@changesets/changelog-github':
+      specifier: ^1.0.1
+      version: 1.0.1
     '@changesets/cli':
       specifier: ^3.0.2
       version: 3.0.2
@@ -159,7 +162,7 @@ importers:
   .:
     devDependencies:
       '@changesets/changelog-github':
-        specifier: 1.0.1
+        specifier: 'catalog:'
         version: 1.0.1
       '@changesets/cli':
         specifier: 'catalog:'
