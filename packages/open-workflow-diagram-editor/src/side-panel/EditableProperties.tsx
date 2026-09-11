@@ -19,7 +19,7 @@ import type { DetailField } from "@/core/taskDetails";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { FieldControl } from "./FieldControls";
 import { PropertyValue, StaticPropertyRow } from "./Fields";
-import {useEditSession, type DraftValues} from "./EditSession";
+import { useEditSession, type DraftValues } from "./EditSession";
 import { fieldName } from "@/core/taskDraft";
 
 /**
@@ -35,7 +35,6 @@ type EditablePropertiesProps = {
   nodeId: string;
 };
 
-
 /* Creates a field name for each and maps each fieldname to its current value. Allows RHF to track changes (only scaler for now) */
 function toDraftValues(fields: DetailField[]): DraftValues {
   const values: DraftValues = {};
@@ -44,15 +43,16 @@ function toDraftValues(fields: DetailField[]): DraftValues {
     if (field.kind === "scalar") {
       values[fieldName(field.segments)] = field.value;
     }
-  };
+  }
 
   return values;
 }
 
 export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) {
   const baseId = React.useId();
-  const {form, isEditing, setIsEditing} = useEditSession();
-  const [fieldToFocus, setFieldToFocus] = React.useState<string | null>(null);
+  const { form, isEditing, setIsEditing } = useEditSession();
+
+  const fieldToFocus = React.useRef<string | null>(null);
 
   /* Reset on node change rather than remounting behind a `key`: `useForm` lives above the
      rows, so remounting them alone would leave the previous node's values in the draft. */
@@ -63,28 +63,28 @@ export function EditableProperties({ fields, nodeId }: EditablePropertiesProps) 
     }
 
     renderedNodeId.current = nodeId;
+    fieldToFocus.current = null;
     form.reset(toDraftValues(fields));
     setIsEditing(false);
-    setFieldToFocus(null);
   }, [nodeId, fields, form, setIsEditing]);
 
   /* Deferred to an effect because the control does not exist until edit mode has rendered. */
   React.useEffect(() => {
-    if (!isEditing || fieldToFocus === null) {
+    if (!isEditing || fieldToFocus.current === null) {
       return;
     }
 
-    form.setFocus(fieldToFocus);
-    setFieldToFocus(null);
+    form.setFocus(fieldToFocus.current);
+    fieldToFocus.current = null;
   }, [isEditing, fieldToFocus, form]);
 
   const activateField = (name: string) => {
-    if(!isEditing) {
-    form.reset(toDraftValues(fields));
-    setIsEditing(true);
+    if (!isEditing) {
+      form.reset(toDraftValues(fields));
+      setIsEditing(true);
     }
 
-    setFieldToFocus(name);
+    fieldToFocus.current = name;
   };
 
   return (
