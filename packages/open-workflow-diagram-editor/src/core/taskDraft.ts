@@ -78,15 +78,14 @@ export function applyDirtyValues(
     }
   }
 
-  // For sentinel-derived paths: delete from the model unless the same path (or
-  // a leaf under it) is independently dirty in dirtyPaths — which means the
-  // user actually edited the field after switching back to it.
+  // For sentinel-derived paths: delete from the model unless a dirty field supplied a value - the path itself, a leaf under it or an ancestor
+  // (Ancestor because RHF reports that when a whole shape has changed like raise.error does when an error name becomes an inline definition)
   for (const sentinelPath of sentinelPaths) {
     const prefix = sentinelPath + ".";
-    const independentlyDirty =
-      dirtyPaths.has(sentinelPath) ||
-      [...dirtyPaths].some((p) => p === sentinelPath || p.startsWith(prefix));
-    if (!independentlyDirty) {
+    const suppliedByEdit = [...dirtyPaths].some(
+      (p) => p === sentinelPath || p.startsWith(prefix) || sentinelPath.startsWith(p + "."),
+    );
+    if (!suppliedByEdit) {
       deletePath(result, sentinelPath.split("."));
     }
   }
