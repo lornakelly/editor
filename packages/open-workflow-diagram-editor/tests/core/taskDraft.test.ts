@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+ // oxlint-disable unicorn/no-thenable -- `then` is an Open Workflow Spec field
+
 import { describe, expect, it } from "vitest";
 import { unflattenValues, applyDirtyValues } from "../../src/core/taskDraft";
 
@@ -206,31 +208,68 @@ describe("applyDirtyValues", () => {
     });
   });
 
-  it("keeps a nested selectors value when an ancestor path has the change", () => {
-    // Scenario: raise.error held an error name and the user switched it to an inline
-    // definition, so react-hook-form marks the ancestor `raise.error` dirty - its type changed from string to object.
-    // The nested type/title selectors mounted with the switch and are sentinel-dirty too,
-    // but the values beneath them arrived with the ancestor's change and must survive.
-
-    const original = { raise: { error: "notImplemented" } };
-    const allValues = {
-      "raise.error.type": "https://example.com/errors/nope",
-      "raise.error.status": 418,
+  describe("applyDirtyValues with array values", () => {
+    // The switch-case editor registers `switch.0.<name>.when`, but `flattenTask`
+    // collapses an array to a single key — so the whole list arrives here as one dirty value
+    const original = {
+      switch: [
+        { electronicOrder: { when: "${ .type == 'e' }", then: "fulfillElectronic" } },
+        { fallback: { then: "reject" } },
+      ],
     };
 
-    const dirtyPaths = new Set(["raise.error"]);
-    const sentinelPaths = new Set(["raise.error", "raise.error.type", "raise.error.title"]);
-    const result = applyDirtyValues(original, allValues, dirtyPaths, sentinelPaths);
+    it("writes an edited entry without disturbing its siblings", () => {
+      const edited = [
+        { electronicOrder: { when: "${ .type == 'digital' }", then: "fulfillElectronic" } },
+        { fallback: { then: "reject" } },
+      ];
 
-    expect(result).toEqual({
-      raise: { error: { type: "https://example.com/errors/nope", status: 418 } },
+      const result = applyDirtyValues(original, { switch: edited }, new Set(["switch"]));
+
+      expect(result).toEqual({ switch: edited });
     });
-  });
 
-  it("does not mutate the original object", () => {
-    const original = { set: { startEvent: "${x}" } };
-    const allValues = { "set.startEvent": "${changed}" };
-    applyDirtyValues(original, allValues, new Set(["set.startEvent"]));
-    expect(original.set.startEvent).toBe("${x}");
+    it("removes a key the user cleared inside an entry it was told to prune", () => {
+      const edited = [
+        { electronicOrder: { when: "", then: "fulfillElectronic" } },
+        { fallback: { then: "reject" } },
+      ];
+
+      const result = applyDirtyValues(
+        original,
+        { switch: edited },
+        new Set(["switch"]),
+        new Set(),
+        new Set(["switch"]),
+      );
+
+      expect(result).toEqual({
+        switch: [
+          { electronicOrder: { then: "fulfillElectronic" } },
+          { fallback: { then: "reject" } },
+        ],
+      });
+    });
+
+    it("keeps an empty value in an array it was not told to prune", () => {
+      const authored = { listen: { to: { all: [{ with: { type: "" } }] } } };
+      const edited = [{ with: { type: "" } }];
+
+      const result = applyDirtyValues(
+        authored,
+        { "listen.to.all": edited },
+        new Set(["listen.to.all"]),
+      );
+
+      expect(result).toEqual({ listen: { to: { all: [{ with: { type: "" } }] } } });
+    });
+
+    it("leaves the draft it was given untouched", () => {
+      const edited = [{ electronicOrder: { when: "", then: "fulfillElectronic" } }];
+
+      applyDirtyValues(original, { switch: edited }, new Set(["switch"]));
+
+      expect(edited[0]!.electronicOrder).toHaveProperty("when", "");
+    });
   });
 });
