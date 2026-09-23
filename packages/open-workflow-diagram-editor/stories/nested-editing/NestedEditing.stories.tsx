@@ -52,10 +52,18 @@ export const NestedValidation: Story = createWorkflowStory(workflows.nestedValid
 export const RaiseErrorShapes: Story = createWorkflowStory(workflows.raiseErrorShapes);
 export const RunTaskArray: Story = createWorkflowStory(workflows.runTaskArray);
 export const SetOpenMap: Story = createWorkflowStory(workflows.setOpenMap);
-export const SwitchLockedCases: Story = {
-  args: {
-    ...DEFAULT_STORY_ARGS,
-    isReadOnly: true,
-    content: workflows.switchLockedCases,
-  },
-};
+// Switch cases: a group per case, each with an editable `when` and `then`.
+// Click the `routeOrder` node to open it.
+//
+// What to look at:
+//   - four numbered cases; the names are plain text, because renaming one
+//     relabels an edge on the canvas
+//   - `default` has no `when` in the document, so its box is empty
+//   - no +, no ✕, no drag handles — the cases are edges, so the list belongs to
+//     the diagram (TEMPORARY, until the add/reorder/delete milestone)
+//   - clear a `when` and Apply: the key is removed, not saved as ""
+//
+// Editable like every other story here. It was pinned to `isReadOnly` while the
+// whole array fell through to a single free-text input, where typing one
+// character replaced every case with that character.
+export const SwitchLockedCases: Story = createWorkflowStory(workflows.switchLockedCases);

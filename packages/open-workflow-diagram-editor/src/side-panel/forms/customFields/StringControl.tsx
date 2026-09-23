@@ -42,9 +42,25 @@ export function StringControl({ field, id }: StringControlProps) {
 
 function SingleLineStringControl({ field, id }: StringControlProps) {
   const { control, getValues, getFieldState } = useFormContext<Record<string, unknown>>();
-  const { isReadOnly } = useTaskFormContext();
+  const { isReadOnly, expressionVariantPaths } = useTaskFormContext();
   const errorMessage = useFieldError(field.path);
   const { defaultValues } = useFormState({ control });
+
+  // Can this path be holding a leftover value of the wrong kind?
+  //
+  // Only if a one-of offers the same path in two kinds — `emit.event.with.source`
+  // is URI-or-expression — so switching branches can leave the other branch's
+  // value behind. The blanking below is for exactly that, and nothing else.
+  //
+  // On any other path a plain string is entitled to hold a `${...}` expression:
+  // a switch case's `when` and a task's `if` both accept one. Blanking those
+  // hid the user's own value, which is the bug this flag fixes.
+  //
+  // See it: Storybook → Nested Editing / Workflows → **Switch Locked Cases**,
+  // click `routeOrder` — each case's `when` shows its expression. Without this
+  // flag all four render empty. Compare **Call Endpoint Union** → the endpoint
+  // one-of, where flipping URI ⇄ Expression still clears the box.
+  const canHoldStaleKind = expressionVariantPaths.has(field.path);
 
   const placeholder = field.placeholder ?? (field.isRuntimeExpression ? "${...}" : undefined);
 
@@ -53,7 +69,7 @@ function SingleLineStringControl({ field, id }: StringControlProps) {
     const live = getValues(field.path as never) as unknown;
     const wasDirtied = getFieldState(field.path as never).isDirty;
     // Stale defaultValues restoration after a kind-boundary switch
-    if (typeof live === "string" && !wasDirtied) {
+    if (canHoldStaleKind && typeof live === "string" && !wasDirtied) {
       const isRe = /^\s*\$\{.+\}\s*$/.test(live);
       if (isRe !== field.isRuntimeExpression) {
         return "";
@@ -77,7 +93,7 @@ function SingleLineStringControl({ field, id }: StringControlProps) {
     // Re-derive from the new task state — same logic as the useState initialiser.
     const live = getValues(field.path as never) as unknown;
     const wasDirtied = getFieldState(field.path as never).isDirty;
-    if (typeof live === "string" && !wasDirtied) {
+    if (canHoldStaleKind && typeof live === "string" && !wasDirtied) {
       const isRe = /^\s*\$\{.+\}\s*$/.test(live);
       if (isRe !== field.isRuntimeExpression) {
         setInputValue("");

@@ -62,6 +62,21 @@ export function applyDirtyValues(
 
   // Paths that are dirty solely because the variant selector (sentinel) changed.
   sentinelPaths: Set<string> = new Set(),
+
+  // Paths holding a list the user edits through form controls (today: a
+  // `ordered-map`, i.e. switch cases). Only these get their empty leaves
+  // pruned, because clearing a control is how you remove a key there. An array
+  // the user typed as text means exactly what it says, empty strings included.
+  //
+  // ⚠️ The caller has to name these; the value's shape cannot decide it. A
+  // `listen.to.all` entry is a single-key object (`{ with: {...} }`) just like
+  // a switch case is (`{ electronicOrder: {...} }`), so any shape test would
+  // prune both.
+  //
+  // See it: Storybook → Nested Editing / Workflows → **Switch Locked Cases**,
+  // click `routeOrder`, clear case 1's `when` and press Apply — `when`
+  // disappears from the task rather than being saved as "".
+  formListPaths: Set<string> = new Set(),
 ): Record<string, unknown> {
   // Deep clone the original so we never mutate the store value.
   const result = deepClone(original);
@@ -73,6 +88,11 @@ export function applyDirtyValues(
     // field — delete it from the clone rather than writing an empty string.
     if (value === undefined || value === null || value === "") {
       deletePath(result, dotPath.split("."));
+    } else if (Array.isArray(value) && formListPaths.has(dotPath)) {
+      // `flattenTask` collapses an array to one key, so a list edited field by
+      // field (switch cases) arrives whole. Apply the same "cleared means
+      // removed" rule to the leaves inside it that scalars get above.
+      setPath(result, dotPath.split("."), pruneEmptyLeaves(value));
     } else {
       setPath(result, dotPath.split("."), value);
     }
@@ -96,6 +116,31 @@ export function applyDirtyValues(
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Returns a copy of `value` with every empty leaf (`undefined`, `null`, `""`)
+ * dropped from the objects inside it:
+ *
+ *     [{ a: { when: "", then: "x" } }]  ->  [{ a: { then: "x" } }]
+ *
+ * Entries themselves are kept even when they end up empty — an entry the user
+ * emptied is still an entry, and the panel cannot remove entries anyway.
+ * Strings sitting directly in an array are untouched, so an intentional empty
+ * argument in `["--flag", ""]` survives.
+ */
+function pruneEmptyLeaves<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((entry) => pruneEmptyLeaves(entry)) as T;
+  }
+  if (value === null || typeof value !== "object") return value;
+
+  const result: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    if (v === undefined || v === null || v === "") continue;
+    result[key] = pruneEmptyLeaves(v);
+  }
+  return result as T;
+}
 
 function deepClone<T>(value: T): T {
   // JSON round-trip is sufficient: task data is always plain JSON-serialisable.

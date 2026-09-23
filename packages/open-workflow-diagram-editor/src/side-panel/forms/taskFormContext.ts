@@ -30,12 +30,19 @@ export type TaskFormContextType = {
    * additionally for field-visibility filtering in read-only mode.
    */
   taskData: Record<string, unknown>;
+  /**
+   * Paths a one-of offers both as a `${...}` expression and as another kind of
+   * string. Only these can hold a value left behind by the variant the user
+   * switched away from — see `collectExpressionVariantPaths`.
+   */
+  expressionVariantPaths: Set<string>;
 };
 
 export const TaskFormContext = React.createContext<TaskFormContextType>({
   isReadOnly: false,
   siblingTaskNames: [],
   taskData: {},
+  expressionVariantPaths: new Set(),
 });
 
 export function useTaskFormContext(): TaskFormContextType {
@@ -81,6 +88,109 @@ function hasObjectAtPath(task: Record<string, unknown>, path: string): boolean {
 }
 
 /**
+ * Collects the paths where one one-of offers the *same* string field in two
+ * different kinds — once as a `${...}` expression and once as something else.
+ * `emit.event.with.source` is the only such path today: it is either a URI or
+ * an expression, and both branches write to `…with.source`.
+ *
+ * Why this list exists: `StringControl` blanks its input when the stored value
+ * looks like the wrong kind, so that switching URI → Expression does not leave
+ * the old URI sitting in the expression box. That clean-up is only ever
+ * *correct* at a path two branches share. Anywhere else a plain string is
+ * perfectly entitled to hold an expression — a switch case's `when` and a
+ * task's `if` both accept `${ … }` or a bare jq condition — and blanking there
+ * hides what the document actually says.
+ *
+ * See it: Storybook → Nested Editing / Workflows → **Switch Locked Cases**,
+ * click `routeOrder`. Every case's `when` holds `${ .orderType == … }`. Before
+ * this list existed, all four boxes rendered empty. The same bug hit every
+ * task's `if`.
+ */
+export function collectExpressionVariantPaths(fields: FormFieldDescriptor[]): Set<string> {
+  const byPath = new Map<string, Set<boolean>>();
+
+  const walk = (list: FormFieldDescriptor[], insideOneOf: boolean): void => {
+    for (const field of list) {
+      if (field.kind === "object") {
+        walk(field.children, insideOneOf);
+      } else if (field.kind === "one-of") {
+        for (const variant of field.variants) walk(variant.fields, true);
+      } else if (field.kind === "string" && insideOneOf) {
+        const kinds = byPath.get(field.path) ?? new Set<boolean>();
+        kinds.add(field.isRuntimeExpression);
+        byPath.set(field.path, kinds);
+      }
+    }
+  };
+  walk(fields, false);
+
+  return new Set([...byPath].filter(([, kinds]) => kinds.size > 1).map(([path]) => path));
+}
+
+/**
+ * Collects the paths of lists the user edits through form controls, so
+ * `applyDirtyValues` knows which arrays to strip empty values out of before
+ * saving. Clearing a control is how you remove a key in such a list, so the
+ * `""` it leaves behind must not reach the model.
+ *
+ * Only `ordered-map` qualifies. An array edited as text (`json`) means
+ * exactly what it says — an empty string in it was typed on purpose.
+ *
+ * ⚠️ This has to be a descriptor question, not a shape question. A
+ * `listen.to.all` entry (`{ with: {...} }`) is a single-key object exactly like
+ * a switch case (`{ electronicOrder: {...} }`), so any check on the value alone
+ * would strip both.
+ */
+export function collectFormListPaths(fields: FormFieldDescriptor[]): Set<string> {
+  const paths = new Set<string>();
+
+  const walk = (list: FormFieldDescriptor[]): void => {
+    for (const field of list) {
+      if (field.kind === "ordered-map") paths.add(field.path);
+      else if (field.kind === "object") walk(field.children);
+      else if (field.kind === "one-of") for (const v of field.variants) walk(v.fields);
+    }
+  };
+  walk(fields);
+
+  return paths;
+}
+
+/**
+ * Re-roots a descriptor list under `prefix`, recursing through containers:
+ *
+ *     prefixFields([{ path: "when" }], "switch.0.electronicOrder")
+ *       -> [{ path: "switch.0.electronicOrder.when" }]
+ *
+ * `OrderedMapField.itemFields` describes one entry using entry-relative
+ * paths, because the schema knows an entry's shape but not how many entries a
+ * given task has — that is data. Joining the two is the rendering row's job,
+ * and this is that join.
+ */
+export function prefixFields(fields: FormFieldDescriptor[], prefix: string): FormFieldDescriptor[] {
+  return fields.map((field): FormFieldDescriptor => {
+    const path = `${prefix}.${field.path}`;
+    if (field.kind === "object") {
+      return { ...field, path, children: prefixFields(field.children, prefix) };
+    }
+    if (field.kind === "one-of") {
+      return {
+        ...field,
+        path,
+        variants: field.variants.map((variant) => ({
+          ...variant,
+          fields: prefixFields(variant.fields, prefix),
+        })),
+      };
+    }
+    // Everything else re-roots its own path and nothing more. Note a nested
+    // `ordered-map` keeps its `itemFields` entry-relative: those are
+    // re-rooted by the row that renders that list, not by this one.
+    return { ...field, path };
+  });
+}
+
+/**
  * Recursively filters a field list for read-only display.
  *
  * Rules:
@@ -117,6 +227,13 @@ export function filterReadOnlyFields(
     if (field.kind === "map") {
       // Show the map group only when the task contains a non-empty object at this path.
       return hasObjectAtPath(task, field.path) ? [field] : [];
+    }
+
+    if (field.kind === "ordered-map") {
+      // A list with no entries has nothing to read. Entries are filtered one by
+      // one by the row that renders them, against that entry's own values.
+      const v = getNestedValue(task, field.path);
+      return Array.isArray(v) && v.length > 0 ? [field] : [];
     }
 
     if (field.kind === "json") {

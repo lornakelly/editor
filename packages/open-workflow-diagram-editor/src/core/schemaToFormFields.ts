@@ -36,6 +36,7 @@ export type FormFieldDescriptor =
   | ObjectField
   | MapField
   | JsonField
+  | OrderedMapField
   | OneOfField;
 
 interface FieldBase {
@@ -94,6 +95,38 @@ export interface ThenField extends FieldBase {
 
 export interface ChildTaskListField extends FieldBase {
   kind: "child-task-list";
+}
+
+/**
+ * A map whose order is significant, written as an array of single-key objects
+ * — the key is the name the user chose, and order is what makes it an array
+ * rather than a `map`. Only `switch` looks like this today, where the cases
+ * are evaluated in the order given:
+ *
+ *     switch:
+ *       - electronicOrder:          <- the name
+ *           when: ${ .type == "e" } <- the entry's fields
+ *           then: fulfillElectronic
+ *
+ * In schema terms: an array whose `items` is an object with `minProperties: 1`,
+ * `maxProperties: 1` and an `additionalProperties` sub-schema of its own. That
+ * shape is what tells it apart from a `map` (unordered, so an object), from an
+ * open key-value map, and from a `child-task-list` — which is *also* an ordered
+ * map, but of tasks, and is drawn on the canvas rather than in this panel.
+ *
+ * `itemFields` describes **one** entry, so its paths are relative to that entry
+ * (`when`, `then`) rather than to the task root — the schema knows an entry's
+ * shape but not how many entries there are, which is data. The rendering row
+ * joins them back up into `switch.0.electronicOrder.when`. `MapField` splits the
+ * same way for its user-keyed entries.
+ *
+ * See it: Storybook → Nested Editing / Workflows → **Switch Locked Cases**,
+ * then click the `routeOrder` node. The side panel opens on a `switch` group
+ * with one numbered block per case.
+ */
+export interface OrderedMapField extends FieldBase {
+  kind: "ordered-map";
+  itemFields: FormFieldDescriptor[];
 }
 
 export interface ObjectField extends FieldBase {
@@ -186,6 +219,22 @@ function isMapSchema(schema: Record<string, unknown>): boolean {
 }
 
 /**
+ * Returns an array schema's `items` sub-schema, following one level of `$ref`,
+ * or `undefined` when the node is not an array with an object `items`.
+ *
+ * Shared by the two array shapes the form renders with a dedicated control —
+ * task lists and ordered maps — which differ only in what they then ask of
+ * `items`.
+ */
+function arrayItemsSchema(
+  schema: Record<string, unknown>,
+  defs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  const node = typeof schema.$ref === "string" ? resolveRef(schema.$ref, defs) : schema;
+  return node?.type === "array" && isPlainObject(node.items) ? node.items : undefined;
+}
+
+/**
  * Returns true if the schema node (or any `$ref` it resolves to) represents
  * a task-list — an array whose `items.additionalProperties.$ref` points to
  * the task union.
@@ -194,23 +243,34 @@ function isTaskListSchema(
   schema: Record<string, unknown>,
   defs: Record<string, unknown> | undefined,
 ): boolean {
-  let node: Record<string, unknown> = schema;
-
-  // Follow one level of $ref
-  if (typeof node.$ref === "string") {
-    const resolved = resolveRef(node.$ref, defs);
-    if (!resolved) return false;
-    node = resolved;
-  }
-
-  if (node.type !== "array") return false;
-  const items = node.items;
-  if (!isPlainObject(items)) return false;
-  const ap = (items as Record<string, unknown>).additionalProperties;
-  if (!isPlainObject(ap)) return false;
-  const apRef = ap.$ref;
+  const entry = arrayItemsSchema(schema, defs)?.additionalProperties;
+  const ref = isPlainObject(entry) ? entry.$ref : undefined;
   // Matches any ref whose last path segment is "task" (e.g. "#/$defs/task")
-  return typeof apRef === "string" && (apRef === "#/$defs/task" || apRef.endsWith("/task"));
+  return typeof ref === "string" && (ref === "#/$defs/task" || ref.endsWith("/task"));
+}
+
+/**
+ * Returns the sub-schema describing one entry of an ordered map (for `switch`,
+ * the `{ when, then }` shape), or `undefined` when this is not one.
+ *
+ * Two checks beyond "is an array", both structural so no definition name is
+ * hardcoded:
+ *   1. `items.minProperties === 1 && items.maxProperties === 1` — each entry
+ *      holds exactly one key, which is the user's name for it. This is the
+ *      YAML idiom for a map whose order matters.
+ *   2. `items.additionalProperties` has `properties` of its own — this is what
+ *      separates it from a task list, whose `additionalProperties` is a bare
+ *      `$ref` to the task union, and from an open-ended key-value map
+ */
+function orderedMapEntrySchema(
+  schema: Record<string, unknown>,
+  defs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  const items = arrayItemsSchema(schema, defs);
+  if (items?.minProperties !== 1 || items.maxProperties !== 1) return undefined;
+
+  const entry = items.additionalProperties;
+  return isPlainObject(entry) && isPlainObject(entry.properties) ? entry : undefined;
 }
 
 /**
@@ -395,6 +455,31 @@ export function schemaToFormFields(
       continue;
     }
 
+    // ── Named item list (switch cases) ─────────────────────────────────────
+    // After the task-list check, so a list of tasks keeps winning.
+    const itemSchema = orderedMapEntrySchema(resolved, localDefs);
+    if (itemSchema) {
+      const itemRequired = new Set<string>(
+        Array.isArray(itemSchema.required) ? (itemSchema.required as string[]) : [],
+      );
+      fields.push({
+        kind: "ordered-map",
+        path: fieldPath,
+        label: deriveLabel(prop, key),
+        ...withDesc(description),
+        required: isRequired,
+        // Empty prefix: `itemFields` paths are relative to one entry.
+        itemFields: schemaToFormFields(
+          itemSchema as DereferencedSchema,
+          localDefs,
+          itemRequired,
+          "",
+          format,
+        ),
+      });
+      continue;
+    }
+
     // ── oneOf / anyOf at property level ────────────────────────────────────
     const candidates = (resolved.oneOf ?? resolved.anyOf) as unknown[] | undefined;
     if (Array.isArray(candidates)) {
@@ -519,6 +604,37 @@ export function schemaToFormFields(
     if (resolved.type === "number" || resolved.type === "integer") {
       fields.push({
         kind: "number",
+        path: fieldPath,
+        label: deriveLabel(prop, key),
+        ...withDesc(description),
+        required: isRequired,
+      });
+      continue;
+    }
+
+    // ── Any other array ────────────────────────────────────────────────────
+    // Every remaining array is edited as text in the workflow's own format —
+    // the same textarea `json` uses elsewhere, which serialises the value on
+    // the way in and parses it back on the way out.
+    //
+    // It must not reach the free-text fallback at the bottom of this function.
+    // That fallback is a single-line input, and `StringControl` shows a
+    // non-string value as "" — so an array rendered there is an empty box, and
+    // typing one character into it commits that character *in place of the
+    // whole list* (`applyDirtyValues` writes `scopes: "o"` over
+    // `["openid", "profile"]`). Two shapes land here: arrays of scalars
+    // (`oidc.scopes`) and arrays of anonymous objects (`listen.to.any`).
+    //
+    // A purpose-built editor for either shape replaces this branch.
+    //
+    // See it: Storybook → Nested Editing / Workflows → **Listen Deep Nesting**,
+    // click `awaitReadings`, open `listen` → `to`. The `any` field shows the
+    // three event filters as YAML. (On this branch the textarea is where the
+    // empty box used to be.)
+    if (resolved.type === "array") {
+      fields.push({
+        kind: "json",
+        format,
         path: fieldPath,
         label: deriveLabel(prop, key),
         ...withDesc(description),

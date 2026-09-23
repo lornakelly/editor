@@ -16,12 +16,22 @@
 
 import * as React from "react";
 import { HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
-import { useFormContext, useWatch } from "react-hook-form";
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useI18n } from "@openworkflowspec/i18n";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { FormFieldDescriptor, ObjectField, OneOfField } from "../../core/schemaToFormFields";
+import type {
+  FormFieldDescriptor,
+  OrderedMapField,
+  ObjectField,
+  OneOfField,
+} from "../../core/schemaToFormFields";
 import { FieldControl } from "./FieldControl";
-import { useTaskFormContext, filterReadOnlyFields, getNestedValue } from "./taskFormContext";
+import {
+  useTaskFormContext,
+  filterReadOnlyFields,
+  getNestedValue,
+  prefixFields,
+} from "./taskFormContext";
 import {
   Combobox,
   ComboboxContent,
@@ -40,6 +50,9 @@ export const SENTINEL_SELF_KEY = "__self__";
 export const SENTINEL_PREFIX = `${SENTINEL_KEY}.`;
 export const SENTINEL_SUFFIX = `.${SENTINEL_SELF_KEY}`;
 
+/** `useFieldArray`’s per-entry key. Not `id`: an entry name could be `id`. */
+const RHF_ENTRY_KEY = "__rhfEntryKey";
+
 // ---------------------------------------------------------------------------
 // FormField — single form row (label + optional tooltip + control)
 // ---------------------------------------------------------------------------
@@ -57,6 +70,9 @@ export function FormField({ field }: FormFieldProps) {
   }
   if (field.kind === "map") {
     return <KeyValueMapField field={field} />;
+  }
+  if (field.kind === "ordered-map") {
+    return <OrderedMapRow field={field} />;
   }
 
   // Boolean controls render as <button role="switch"> — htmlFor→<button> is
@@ -121,6 +137,148 @@ function FieldLabel({
           </TooltipTrigger>
           <TooltipContent>{description}</TooltipContent>
         </Tooltip>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// OrderedMapRow — one group per entry of a `switch`-shaped list
+// ---------------------------------------------------------------------------
+
+/**
+ * Renders one group per entry of an ordered map — in practice, one per switch
+ * case.
+ *
+ * The descriptor only describes a *single* entry, because how many there are is
+ * data rather than schema. So this row reads the live list out of the form and
+ * renders the entry's fields once per item, rewriting each path as it goes:
+ * `when` becomes `switch.0.electronicOrder.when`. Reading the list from the
+ * **form value** rather than the committed task is deliberate — when
+ * add/reorder/delete arrive they can just write the array and these rows will
+ * follow with no change here.
+ *
+ * Each entry is a `<fieldset>` with the case name in its `<legend>`. That is
+ * not decoration: every case contributes another control labelled `when` and
+ * another labelled `then`, and the legend is the only thing telling a screen
+ * reader (or `within(getByRole("group", …))` in a test) which case it is in.
+ *
+ * See it: Storybook → Nested Editing / Workflows → **Switch Locked Cases**,
+ * click the `routeOrder` node. You get four numbered blocks — `electronicOrder`,
+ * `physicalOrder`, `subscriptionOrder`, `default` — each with its own `when` and
+ * `then`. Note `default` shows an empty `when`: it has none in the document, and
+ * that box is currently the only way to add one.
+ */
+function OrderedMapRow({ field }: { field: OrderedMapField }) {
+  const [expanded, setExpanded] = React.useState(true);
+  const { isReadOnly } = useTaskFormContext();
+  const { control } = useFormContext<Record<string, unknown>>();
+  const { t } = useI18n();
+
+  // `useFieldArray` rather than `useWatch`: it re-renders on structural changes
+  // to the list only, not on every keystroke inside an entry, and it is the API
+  // the add/reorder/delete milestone will reach for (`append`/`remove`/`move`).
+  // Its snapshot carries the entry names, which is all this row needs — the
+  // values belong to the controls underneath.
+  const { fields: entries } = useFieldArray({
+    control,
+    name: field.path as never,
+    // Default is `id`, which would collide with a case someone named `id`.
+    keyName: RHF_ENTRY_KEY,
+  });
+
+  function handleToggle() {
+    setExpanded((open) => !open);
+  }
+
+  const rows = entries.flatMap((entry, index) => {
+    const record = entry as unknown as Record<string, unknown>;
+    const name = Object.keys(record).find((key) => key !== RHF_ENTRY_KEY);
+    if (name === undefined) return [];
+
+    const value = record[name];
+    const entryData =
+      value !== null && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : {};
+
+    // Filter while the paths are still relative to this entry, then re-root.
+    const visible = isReadOnly
+      ? filterReadOnlyFields(field.itemFields, entryData)
+      : field.itemFields;
+
+    return [
+      {
+        key: String(record[RHF_ENTRY_KEY]),
+        index,
+        name,
+        fields: prefixFields(visible, `${field.path}.${index}.${name}`),
+      },
+    ];
+  });
+
+  if (isReadOnly && rows.length === 0) return null;
+
+  return (
+    <div className="dec-form-ordered-map">
+      <div className="dec-form-object-header">
+        <button
+          type="button"
+          className="dec-form-object-toggle"
+          onClick={handleToggle}
+          aria-expanded={expanded}
+        >
+          {expanded ? (
+            <ChevronDown className="dec-form-object-chevron" aria-hidden="true" />
+          ) : (
+            <ChevronRight className="dec-form-object-chevron" aria-hidden="true" />
+          )}
+          <span className="dec-form-object-label">{field.label}</span>
+          {field.required && (
+            <span className="dec-form-field-required" aria-hidden="true">
+              {" "}
+              *
+            </span>
+          )}
+          {/* `t()` has no interpolation, so the count is composed as number +
+              noun, following the `sidebar.field.item`/`items` precedent. */}
+          <span className="dec-form-ordered-map-count">
+            {" "}
+            {rows.length} {t(rows.length === 1 ? "sidebar.field.item" : "sidebar.field.items")}
+          </span>
+        </button>
+        {field.description !== undefined && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="dec-form-field-help"
+                aria-label={`${t("aria.help")}: ${field.label}`}
+              >
+                <HelpCircle className="dec-form-field-help-icon" aria-hidden="true" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{field.description}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+
+      {expanded && (
+        <div className="dec-form-object-children">
+          {rows.map((row) => (
+            <fieldset key={row.key} className="dec-form-ordered-map-item">
+              <legend className="dec-form-ordered-map-legend">
+                <span className="dec-form-ordered-map-index">{row.index + 1}</span>
+                {/* Plain text: the name is this entry's label on the diagram,
+                    and renaming it belongs to the add/delete milestone. */}
+                <span className="dec-form-ordered-map-name">{row.name}</span>
+              </legend>
+              {row.fields.map((child) => (
+                <FormField key={child.path} field={child} />
+              ))}
+            </fieldset>
+          ))}
+        </div>
       )}
     </div>
   );
@@ -205,17 +363,17 @@ function ObjectFieldRow({ field }: { field: ObjectField }) {
 
 function OneOfFieldRow({ field }: { field: OneOfField }) {
   const { isReadOnly, taskData } = useTaskFormContext();
-  const {control, getValues, setValue, register} = useFormContext<Record<string, unknown>>();
+  const { control, getValues, setValue, register } = useFormContext<Record<string, unknown>>();
   const sentinelPath = `${SENTINEL_PREFIX}${field.path}${SENTINEL_SUFFIX}`;
 
   // Watched so the row follows a reset as well as switch
-  const sentinelLabel = useWatch({control, name: sentinelPath as never}) as unknown
+  const sentinelLabel = useWatch({ control, name: sentinelPath as never }) as unknown;
 
   const derivedIdx = React.useMemo(() => {
-    if(typeof sentinelLabel === "string" && sentinelLabel !==""){
-      const chosen = field.variants.findIndex((v)=> v.label === sentinelLabel)
-      if(chosen !== -1){
-        return chosen
+    if (typeof sentinelLabel === "string" && sentinelLabel !== "") {
+      const chosen = field.variants.findIndex((v) => v.label === sentinelLabel);
+      if (chosen !== -1) {
+        return chosen;
       }
     }
     // For the root one-of the relevant data is the whole task object;
@@ -396,6 +554,9 @@ function collectLeafKinds(fields: FormFieldDescriptor[]): Map<string, string> {
     } else if (f.kind === "string") {
       result.set(f.path, f.isRuntimeExpression ? "string:re" : "string:plain");
     } else {
+      // A `ordered-map` belongs here rather than with the containers above:
+      // its `itemFields` are entry-relative templates, not paths, so walking
+      // them would register names that address nothing in the document.
       result.set(f.path, f.kind);
     }
   }

@@ -709,6 +709,78 @@
     @apply dec:text-gray-500;
   }
 
+  /* ── Named item list (switch cases) ──────────────────────────────────── */
+
+  /* Deliberately reuses the object group's frame, header and body classes: a
+     list of named entries is just another disclosure group, and a second visual
+     language for the same gesture is one more thing to learn for no gain. Only
+     the entries inside differ.
+
+     See it: Storybook → Nested Editing / Workflows → Switch Locked Cases →
+     click `routeOrder`. The `switch` group and the `input` group below it share
+     one frame and one header treatment; only `switch` has numbered entries. */
+  .dec-root .dec-form-ordered-map {
+    @apply dec:flex dec:flex-col dec:rounded-md
+      dec:border dec:border-gray-200 dec:overflow-hidden;
+  }
+
+  .dec-root.dark .dec-form-ordered-map {
+    @apply dec:border-gray-700;
+  }
+
+  .dec-root .dec-form-ordered-map-count {
+    @apply dec:ml-auto dec:text-[10px] dec:text-gray-500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dec-root.dark .dec-form-ordered-map-count {
+    @apply dec:text-gray-400;
+  }
+
+  /* `<fieldset>` is here for its grouping semantics (see OrderedMapRow), not
+     its looks, so its browser defaults are reset: a border, padding, and a
+     `min-width: min-content` that would stop it shrinking inside a flex column
+     and push the panel wide. The left rail replaces the default border.
+
+     ⚠️ jsdom loads no stylesheet, so a missing reset here passes every unit
+     test and only shows in a browser. Check it in Storybook. */
+  .dec-root .dec-form-ordered-map-item {
+    @apply dec:flex dec:flex-col dec:gap-2 dec:m-0 dec:border-0 dec:p-0
+      dec:pl-2.5 dec:border-l dec:border-gray-200;
+    min-width: 0;
+  }
+
+  .dec-root.dark .dec-form-ordered-map-item {
+    @apply dec:border-gray-700;
+  }
+
+  .dec-root .dec-form-ordered-map-legend {
+    @apply dec:flex dec:items-center dec:gap-1.5 dec:p-0;
+  }
+
+  /* The ordinal is chrome — the name is what identifies the entry, and on a
+     switch it is also the edge's label on the canvas. */
+  .dec-root .dec-form-ordered-map-index {
+    @apply dec:text-[10px] dec:text-gray-400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dec-root.dark .dec-form-ordered-map-index {
+    @apply dec:text-gray-500;
+  }
+
+  /* Wraps rather than truncating: the name is the entry's identity, and half
+     of it does not identify anything. */
+  .dec-root .dec-form-ordered-map-name {
+    @apply dec:text-xs dec:font-medium dec:text-gray-700 dec:min-w-0;
+    font-family: var(--dec-font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  .dec-root.dark .dec-form-ordered-map-name {
+    @apply dec:text-gray-200;
+  }
+
   /* ── Key-value map editor ────────────────────────────────────────────── */
 
   .dec-root .dec-map-group {

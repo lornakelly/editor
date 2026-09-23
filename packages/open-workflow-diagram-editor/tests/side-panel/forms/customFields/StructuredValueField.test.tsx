@@ -64,7 +64,14 @@ function Wrapper({
   const form = useForm<Record<string, unknown>>({ defaultValues });
   return (
     <I18nProvider locale="en" dictionaries={{ en }}>
-      <TaskFormContext.Provider value={{ isReadOnly, siblingTaskNames: [], taskData: {} }}>
+      <TaskFormContext.Provider
+        value={{
+          isReadOnly,
+          siblingTaskNames: [],
+          taskData: {},
+          expressionVariantPaths: new Set<string>(),
+        }}
+      >
         <FormProvider {...form}>
           <StructuredValueField field={field} id="test-field" />
           {/* Expose the current RHF value in a data attribute for easy assertion. */}
@@ -195,7 +202,14 @@ describe("StructuredValueField — defaultValues reset", () => {
     }, [form, defaults]);
     return (
       <I18nProvider locale="en" dictionaries={{ en }}>
-        <TaskFormContext.Provider value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}>
+        <TaskFormContext.Provider
+          value={{
+            isReadOnly: false,
+            siblingTaskNames: [],
+            taskData: {},
+            expressionVariantPaths: new Set<string>(),
+          }}
+        >
           <FormProvider {...form}>
             <StructuredValueField field={yamlField} />
           </FormProvider>
@@ -275,7 +289,12 @@ describe("StructuredValueField — Strict Mode double-effect robustness", () => 
       <React.StrictMode>
         <I18nProvider locale="en" dictionaries={{ en }}>
           <TaskFormContext.Provider
-            value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}
+            value={{
+              isReadOnly: false,
+              siblingTaskNames: [],
+              taskData: {},
+              expressionVariantPaths: new Set<string>(),
+            }}
           >
             <FormProvider {...form}>
               <StructuredValueField field={field} id="test-field" />

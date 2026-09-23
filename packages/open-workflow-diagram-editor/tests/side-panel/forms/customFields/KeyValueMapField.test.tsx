@@ -80,7 +80,14 @@ function MapFieldWrapper({
 
   return (
     <I18nProvider locale="en" dictionaries={{ en }}>
-      <TaskFormContext.Provider value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}>
+      <TaskFormContext.Provider
+        value={{
+          isReadOnly: false,
+          siblingTaskNames: [],
+          taskData: {},
+          expressionVariantPaths: new Set<string>(),
+        }}
+      >
         <FormProvider {...form}>{ready && <KeyValueMapField field={mapField} />}</FormProvider>
       </TaskFormContext.Provider>
     </I18nProvider>
@@ -175,7 +182,12 @@ describe("KeyValueMapField — variant-switch restore", () => {
       return (
         <I18nProvider locale="en" dictionaries={{ en }}>
           <TaskFormContext.Provider
-            value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}
+            value={{
+              isReadOnly: false,
+              siblingTaskNames: [],
+              taskData: {},
+              expressionVariantPaths: new Set<string>(),
+            }}
           >
             <FormProvider {...form}>
               <KeyValueMapField field={mapField} />
@@ -221,7 +233,12 @@ describe("KeyValueMapField — variant-switch restore", () => {
       return (
         <I18nProvider locale="en" dictionaries={{ en }}>
           <TaskFormContext.Provider
-            value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}
+            value={{
+              isReadOnly: false,
+              siblingTaskNames: [],
+              taskData: {},
+              expressionVariantPaths: new Set<string>(),
+            }}
           >
             <FormProvider {...form}>
               <KeyValueMapField field={mapField} />

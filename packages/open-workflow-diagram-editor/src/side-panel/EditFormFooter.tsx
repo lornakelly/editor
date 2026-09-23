@@ -31,6 +31,7 @@ import {
   SENTINEL_SUFFIX,
 } from "@/side-panel/forms/FormField";
 import { getFormFieldsForNodeType } from "@/core";
+import { collectFormListPaths } from "@/side-panel/forms/taskFormContext";
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";
 import { useEditSession } from "./EditSession";
 import { Check } from "lucide-react";
@@ -132,6 +133,7 @@ export function EditFormFooter({ node }: { node: RF.Node<BaseNodeData> }) {
       flatValues,
       flatDirty,
       sentinelPaths,
+      collectFormListPaths(getFormFieldsForNodeType(node.type ?? "")),
     ) as Specification.Task;
     const updatedModel = updateTask(model, node.id, updated);
     commitWorkflow(updatedModel);

@@ -65,7 +65,14 @@ const exprField: StringField = {
   placeholder: "${...}",
 };
 
-const taskFormContextValue = { isReadOnly: false, siblingTaskNames: [], taskData: {} } as const;
+// `emit.event.with.source` is the path emit's one-of offers both as a URI and
+// as an expression — the only kind of path the stale-value guard applies to.
+const taskFormContextValue = {
+  isReadOnly: false,
+  siblingTaskNames: [],
+  taskData: {},
+  expressionVariantPaths: new Set(["emit.event.with.source"]),
+} as const;
 
 function getInput() {
   return screen.getByRole("textbox") as HTMLInputElement;
@@ -245,5 +252,50 @@ describe("StringControl — kind-boundary clear on variant switch", () => {
     });
 
     expect(getInput().value).toBe("https://original.com");
+  });
+});
+
+describe("StringControl — a plain string field whose value is an expression", () => {
+  /**
+   * `switch[].when` and a task's `if` are plain strings in the schema, and the
+   * DSL lets either hold a `${...}` expression or a bare jq one. Neither sits
+   * in a one-of, so no sibling variant can have left a stale value of the wrong
+   * kind behind — the kind-boundary guard above must not fire on them.
+   */
+  const conditionField: StringField = {
+    kind: "string",
+    path: "if",
+    label: "if",
+    required: false,
+    multiline: false,
+    isRuntimeExpression: false,
+  };
+
+  function renderPlain(value: string) {
+    function PlainWrapper() {
+      const form = useForm<Record<string, unknown>>({ defaultValues: { if: value } });
+      return (
+        <I18nProvider locale="en" dictionaries={{ en }}>
+          <TaskFormContext.Provider value={taskFormContextValue}>
+            <FormProvider {...form}>
+              <StringControl field={conditionField} />
+            </FormProvider>
+          </TaskFormContext.Provider>
+        </I18nProvider>
+      );
+    }
+    render(<PlainWrapper />);
+  }
+
+  it("shows an expression value", () => {
+    renderPlain('${ .orderType == "electronic" }');
+
+    expect(getInput().value).toBe('${ .orderType == "electronic" }');
+  });
+
+  it("shows a plain value", () => {
+    renderPlain('$context.issue.action == "close"');
+
+    expect(getInput().value).toBe('$context.issue.action == "close"');
   });
 });

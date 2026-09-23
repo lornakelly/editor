@@ -53,7 +53,14 @@ function NumberControlWrapper({ defaultValue }: { defaultValue?: number }) {
 
   return (
     <I18nProvider locale="en" dictionaries={{ en }}>
-      <TaskFormContext.Provider value={{ isReadOnly: false, siblingTaskNames: [], taskData: {} }}>
+      <TaskFormContext.Provider
+        value={{
+          isReadOnly: false,
+          siblingTaskNames: [],
+          taskData: {},
+          expressionVariantPaths: new Set<string>(),
+        }}
+      >
         <FormProvider {...form}>
           <FieldControl field={numberField} id="field-wait-seconds" />
         </FormProvider>

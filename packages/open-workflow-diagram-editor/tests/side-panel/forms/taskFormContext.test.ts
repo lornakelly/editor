@@ -19,7 +19,9 @@ import {
   getNestedValue,
   hasValue,
   filterReadOnlyFields,
+  collectExpressionVariantPaths,
 } from "../../../src/side-panel/forms/taskFormContext";
+import { getFormFieldsForNodeType } from "../../../src/core/schemaWalker";
 import type { FormFieldDescriptor } from "../../../src/core/schemaToFormFields";
 import { SET_EXAMPLE_WORKFLOW } from "../../fixtures/workflows";
 
@@ -296,5 +298,26 @@ describe("filterReadOnlyFields — one-of fields", () => {
   it("excludes a property-level one-of when the task has no value at that path", () => {
     const result = filterReadOnlyFields([makeOneOf("output.as")], initializeTask);
     expect(result).toHaveLength(0);
+  });
+});
+
+describe("collectExpressionVariantPaths", () => {
+  /**
+   * The paths where a one-of offers the same string both as a `${...}`
+   * expression and as something else. Only there can a variant switch leave a
+   * value of the wrong kind behind — everywhere else a plain string is free to
+   * hold an expression, and blanking it would hide the user's data.
+   */
+  it("finds the path a one-of offers as both an expression and a URI", () => {
+    const paths = collectExpressionVariantPaths(getFormFieldsForNodeType("emit"));
+
+    expect(paths).toContain("emit.event.with.source");
+  });
+
+  it("leaves out a plain condition, which no one-of offers twice", () => {
+    const paths = collectExpressionVariantPaths(getFormFieldsForNodeType("switch"));
+
+    expect(paths.size).toBeGreaterThan(0);
+    expect(paths).not.toContain("if");
   });
 });
