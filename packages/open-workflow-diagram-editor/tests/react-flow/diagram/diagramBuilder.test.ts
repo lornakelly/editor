@@ -407,30 +407,26 @@ describe("diagramBuilder", () => {
 
     describe("default switch case edge (animated)", () => {
       it("animates the default case edge and leaves the conditional one alone", () => {
-        const content = JSON.stringify({
-          document: {
-            dsl: "1.0.3",
-            name: "switch-default",
-            version: "1.0.0",
-            namespace: "default",
+        const content = `{
+          "document": {
+            "dsl": "1.0.3",
+            "name": "switch-default",
+            "version": "1.0.0",
+            "namespace": "default"
           },
-          do: [
+          "do": [
             {
-              decide: {
-                switch: [
-                  // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-                  { conditional: { when: ".t == 1", then: "alpha" } },
-                  // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-                  { hello: { then: "beta" } },
-                ],
-              },
+              "decide": {
+                "switch": [
+                  { "conditional": { "when": ".t == 1", "then": "alpha" } },
+                  { "hello": { "then": "beta" } }
+                ]
+              }
             },
-            // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-            { alpha: { set: { a: 1 }, then: "exit" } },
-            // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-            { beta: { set: { b: 1 }, then: "exit" } },
-          ],
-        });
+            { "alpha": { "set": { "a": 1 }, "then": "exit" } },
+            { "beta": { "set": { "b": 1 }, "then": "exit" } }
+          ]
+        }`;
 
         const diagram = buildDiagramFromWorkflow(content);
         const animatedByLabel = new Map(

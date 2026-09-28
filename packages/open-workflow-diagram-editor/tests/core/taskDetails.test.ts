@@ -38,8 +38,7 @@ describe("getTaskDetails", () => {
 
   it("orders task specific fields before base fields (if/then)", () => {
     const fields = getTaskDetails(
-      // eslint-disable-next-line unicorn/no-thenable -- 'then' is a real SWF directive
-      asTask({ if: "${ .ok }", set: { foo: "bar" }, then: "continue" }),
+      asTask(JSON.parse(`{ "if": "\${ .ok }", "set": { "foo": "bar" }, "then": "continue" }`)),
     );
 
     expect(fields).toEqual([
@@ -265,15 +264,14 @@ describe("getTaskDetails", () => {
 
   it("returns base fields in the expected order", () => {
     const fields = getTaskDetails(
-      asTask({
-        if: "${ .condition }",
-        input: { from: "${ .input }" },
-        output: { as: "${ .output }" },
-        export: { as: "${ .export }" },
-        timeout: "PT5M",
-        // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-        then: "next",
-      }),
+      asTask(JSON.parse(`{
+        "if": "\${ .condition }",
+        "input": { "from": "\${ .input }" },
+        "output": { "as": "\${ .output }" },
+        "export": { "as": "\${ .export }" },
+        "timeout": "PT5M",
+        "then": "next"
+      }`)),
     );
 
     expect(fields).toEqual([

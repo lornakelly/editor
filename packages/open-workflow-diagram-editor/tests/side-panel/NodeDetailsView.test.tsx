@@ -32,13 +32,11 @@ describe("NodeDetailsView", () => {
   it("renders every task field as a path labelled row under the Properties header", () => {
     const node = makeNode({
       label: "getPets",
-      // eslint-disable-next-line unicorn/no-thenable -- 'then' is a real SWF directive
-      task: {
-        call: "http",
-        with: { endpoint: "https://api.example.com" },
-        // eslint-disable-next-line unicorn/no-thenable -- then is an Open Workflow Spec field
-        then: "continue",
-      },
+      task: JSON.parse(`{
+        "call": "http",
+        "with": { "endpoint": "https://api.example.com" },
+        "then": "continue"
+      }`),
     });
 
     renderWithProviders(<NodeDetailsView node={node} />);
