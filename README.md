@@ -16,7 +16,7 @@
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Feditor.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fopen-workflow-specification%2Feditor?ref=badge_large)
 
-# editor
+# TEST editor
 
 The official **vendor-neutral visual editor** for the [Open Workflow Specification](https://github.com/open-workflow-specification/specification).
 
