@@ -119,6 +119,12 @@ export function filterReadOnlyFields(
       return hasObjectAtPath(task, field.path) ? [field] : [];
     }
 
+    if (field.kind === "object-list") {
+      // Show when the task has a non-empty array at this path.
+      const v = getNestedValue(task, field.path);
+      return Array.isArray(v) && v.length > 0 ? [field] : [];
+    }
+
     if (field.kind === "json") {
       // Show whenever the path has any defined value, including null, false, 0,
       // and empty strings — all are valid JSON values worth displaying.

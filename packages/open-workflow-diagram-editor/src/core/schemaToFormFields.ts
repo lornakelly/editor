@@ -37,6 +37,7 @@ export type FormFieldDescriptor =
   | ChildTaskListField
   | StringListField
   | ObjectField
+  | ObjectListField
   | MapField
   | JsonField
   | OneOfField;
@@ -112,6 +113,21 @@ export interface ThenField extends FieldBase {
 
 export interface ChildTaskListField extends FieldBase {
   kind: "child-task-list";
+}
+
+/**
+ * An array of schema-defined objects (e.g. `eventFilter[]` in `listen.to.all`).
+ * Each item is rendered as a collapsible card whose sub-fields are driven by
+ * the schema-derived `itemFields` descriptors.
+ *
+ * Identified structurally: `type: "array"` with a structured `items` schema
+ * that has its own `properties` or `oneOf` (i.e. not a plain string array and
+ * not a task-list).
+ */
+export interface ObjectListField extends FieldBase {
+  kind: "object-list";
+  /** Schema-derived fields for a single item in the array. */
+  itemFields: FormFieldDescriptor[];
 }
 
 export interface ObjectField extends FieldBase {
@@ -677,6 +693,41 @@ export function schemaToFormFields(
       continue;
     }
 
+    // ── Array of complex objects (e.g. eventFilter[] in listen.to.all) ────────
+    // Triggered when items has its own properties/oneOf, or when items is a $ref
+    // to a schema with those — not a plain string list and not a task-list.
+    if (resolved.type === "array" && isPlainObject(resolved.items)) {
+      let itemSchema = resolved.items as Record<string, unknown>;
+      // Resolve a $ref on the items schema (e.g. items: { $ref: "#/$defs/eventFilter" })
+      if (typeof itemSchema.$ref === "string") {
+        const refResolved = resolveRef(itemSchema.$ref, localDefs);
+        if (refResolved) {
+          itemSchema = { ...refResolved, ...itemSchema, $ref: undefined };
+        }
+      }
+      const itemRequired = new Set<string>(
+        Array.isArray(itemSchema.required) ? (itemSchema.required as string[]) : [],
+      );
+      const itemFields = schemaToFormFields(
+        itemSchema as DereferencedSchema,
+        localDefs,
+        itemRequired,
+        "", // paths inside itemFields are relative to each item root
+        format,
+      );
+      if (itemFields.length > 0) {
+        fields.push({
+          kind: "object-list",
+          path: fieldPath,
+          label: deriveLabel(prop, key),
+          ...withDesc(description),
+          required: isRequired,
+          itemFields,
+        });
+        continue;
+      }
+    }
+
     // ── Object with known sub-properties ───────────────────────────────────
     if (resolved.type === "object" && resolved.properties) {
       const childRequired = new Set<string>(
@@ -874,12 +925,15 @@ function buildDiscriminator(resolved: Record<string, unknown>): (data: unknown) 
     }
   }
 
-  // Strategy 2: single unique required property key
+  // Strategy 2: single required property key
+  // Uses the required array rather than own-key count so that variants with
+  // optional extra properties (e.g. AnyEventConsumptionStrategy has `any`
+  // required and `until` optional) still get a specific discriminator instead
+  // of falling through to the generic object fallback.
   if (properties) {
-    const ownKeys = Object.keys(properties);
     const required = Array.isArray(resolved.required) ? (resolved.required as string[]) : [];
-    if (ownKeys.length === 1 && required.includes(ownKeys[0]!)) {
-      const uniqueKey = ownKeys[0]!;
+    if (required.length === 1 && required[0] !== undefined && required[0] in properties) {
+      const uniqueKey = required[0];
       return (data: unknown) =>
         isPlainObject(data) && (data as Record<string, unknown>)[uniqueKey] !== undefined;
     }
@@ -1031,8 +1085,13 @@ function buildOneOfVariants(
           ];
         }
         const isGenericTypeLabel = GENERIC_TYPE_LABELS.has(titleCandidate ?? "");
+        const pathSegment = parentPath.split(".").pop() ?? "";
         const label =
-          titleCandidate && !isGenericTypeLabel ? formatVariantLabel(titleCandidate) : "key-value";
+          titleCandidate && !isGenericTypeLabel
+            ? formatVariantLabel(titleCandidate)
+            : pathSegment
+              ? pathSegment.charAt(0).toUpperCase() + pathSegment.slice(1)
+              : "key-value";
         const mapField: MapField = {
           kind: "map",
           path: leafPath,
