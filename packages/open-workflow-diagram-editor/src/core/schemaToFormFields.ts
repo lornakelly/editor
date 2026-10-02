@@ -38,7 +38,6 @@ export type FormFieldDescriptor =
   | StringListField
   | ObjectField
   | EventFilterListField
-  | ObjectListField
   | MapField
   | JsonField
   | OneOfField;
@@ -126,21 +125,6 @@ export interface ChildTaskListField extends FieldBase {
  */
 export interface EventFilterListField extends FieldBase {
   kind: "event-filter-list";
-  /** Schema-derived fields for a single item in the array. */
-  itemFields: FormFieldDescriptor[];
-}
-
-/**
- * An array of schema-defined objects (generic case).
- * Each item is rendered as a collapsible card whose sub-fields are driven by
- * the schema-derived `itemFields` descriptors.
- *
- * Identified structurally: `type: "array"` with a structured `items` schema
- * that has its own `properties` or `oneOf` (i.e. not a plain string array,
- * not a task-list, and not an event-filter array).
- */
-export interface ObjectListField extends FieldBase {
-  kind: "object-list";
   /** Schema-derived fields for a single item in the array. */
   itemFields: FormFieldDescriptor[];
 }
@@ -295,6 +279,27 @@ function isTaskListSchema(
   const apRef = ap.$ref;
   // Matches any ref whose last path segment is "task" (e.g. "#/$defs/task")
   return typeof apRef === "string" && (apRef === "#/$defs/task" || apRef.endsWith("/task"));
+}
+
+/**
+ * Returns the item schema when the node is an array of EventFilter objects
+ * (`with` required, `correlate` declared), following a `$ref` on `items`.
+ */
+function eventFilterItemSchema(
+  schema: Record<string, unknown>,
+  defs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (schema.type !== "array" || !isPlainObject(schema.items)) return undefined;
+  const items = schema.items as Record<string, unknown>;
+  const item =
+    typeof items.$ref === "string"
+      ? { ...resolveRef(items.$ref, defs), ...items, $ref: undefined }
+      : items;
+
+  const required = Array.isArray(item.required) ? (item.required as string[]) : [];
+  const isEventFilter =
+    required.includes("with") && isPlainObject(item.properties) && "correlate" in item.properties;
+  return isEventFilter ? item : undefined;
 }
 
 /**
@@ -708,49 +713,29 @@ export function schemaToFormFields(
       continue;
     }
 
-    // ── Array of complex objects ───────────────────────────────────────────────
-    // Triggered when items has its own properties/oneOf, or when items is a $ref
-    // to a schema with those — not a plain string list and not a task-list.
-    // Emits "event-filter-list" for EventFilter item schemas (detected by the
-    // presence of "with" in required and "correlate" in properties); emits the
-    // generic "object-list" for all other complex item schemas.
-    if (resolved.type === "array" && isPlainObject(resolved.items)) {
-      let itemSchema = resolved.items as Record<string, unknown>;
-      // Resolve a $ref on the items schema (e.g. items: { $ref: "#/$defs/eventFilter" })
-      if (typeof itemSchema.$ref === "string") {
-        const refResolved = resolveRef(itemSchema.$ref, localDefs);
-        if (refResolved) {
-          itemSchema = { ...refResolved, ...itemSchema, $ref: undefined };
-        }
-      }
+    // ── Event-filter list (listen.to.all / listen.to.any) ───────────────────
+    // Only the EventFilter item shape gets a dedicated editor. Any other array
+    // of objects falls through to the generic handling below.
+    const eventFilterItem = eventFilterItemSchema(resolved, localDefs);
+    if (eventFilterItem) {
       const itemRequired = new Set<string>(
-        Array.isArray(itemSchema.required) ? (itemSchema.required as string[]) : [],
+        Array.isArray(eventFilterItem.required) ? (eventFilterItem.required as string[]) : [],
       );
-      const itemFields = schemaToFormFields(
-        itemSchema as DereferencedSchema,
-        localDefs,
-        itemRequired,
-        "", // paths inside itemFields are relative to each item root
-        format,
-      );
-      if (itemFields.length > 0) {
-        // Detect EventFilter item schema: `with` is required and `correlate` is
-        // a declared property. This is the only schema shape that the specialised
-        // EventFilterListField editor understands.
-        const itemProps = isPlainObject(itemSchema.properties)
-          ? (itemSchema.properties as Record<string, unknown>)
-          : {};
-        const isEventFilterSchema = itemRequired.has("with") && "correlate" in itemProps;
-        fields.push({
-          kind: isEventFilterSchema ? "event-filter-list" : "object-list",
-          path: fieldPath,
-          label: deriveLabel(prop, key),
-          ...withDesc(description),
-          required: isRequired,
-          itemFields,
-        });
-        continue;
-      }
+      fields.push({
+        kind: "event-filter-list",
+        path: fieldPath,
+        label: deriveLabel(prop, key),
+        ...withDesc(description),
+        required: isRequired,
+        itemFields: schemaToFormFields(
+          eventFilterItem as DereferencedSchema,
+          localDefs,
+          itemRequired,
+          "", // paths inside itemFields are relative to each item root
+          format,
+        ),
+      });
+      continue;
     }
 
     // ── Object with known sub-properties ───────────────────────────────────
@@ -1110,13 +1095,8 @@ function buildOneOfVariants(
           ];
         }
         const isGenericTypeLabel = GENERIC_TYPE_LABELS.has(titleCandidate ?? "");
-        const pathSegment = parentPath.split(".").pop() ?? "";
         const label =
-          titleCandidate && !isGenericTypeLabel
-            ? formatVariantLabel(titleCandidate)
-            : pathSegment
-              ? pathSegment.charAt(0).toUpperCase() + pathSegment.slice(1)
-              : "key-value";
+          titleCandidate && !isGenericTypeLabel ? formatVariantLabel(titleCandidate) : "key-value";
         const mapField: MapField = {
           kind: "map",
           path: leafPath,

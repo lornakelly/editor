@@ -21,7 +21,6 @@ import type {
   OneOfField,
   StringField,
   ObjectField,
-  ObjectListField,
   EventFilterListField,
   EnumField,
   JsonField,
@@ -685,7 +684,7 @@ describe("OneOfVariant constWrites — call discriminator", () => {
   });
 });
 
-describe("schemaToFormFields listenTask — ObjectListField and event filter structure", () => {
+describe("schemaToFormFields listenTask — event filter structure", () => {
   /**
    * Helper: get the fields for listenTask and navigate into the `listen.to`
    * one-of. Returns the OneOfField at `listen.to` and a helper to pick a variant.
@@ -906,38 +905,67 @@ describe("schemaToFormFields listenTask — One variant and Any+until fields", (
     expect(oneVariant?.matchesData({ any: [] })).toBe(false);
   });
 
-  it("handles items with $ref when resolving object-list schema", () => {
+  function arrayOfRefField(itemDef: Record<string, unknown>): FormFieldDescriptor | undefined {
     const rawSchema = {
       type: "object",
-      properties: {
-        filters: {
-          type: "array",
-          items: {
-            $ref: "#/$defs/customFilter",
-          },
-        },
-      },
+      properties: { filters: { type: "array", items: { $ref: "#/$defs/item" } } },
     };
-    const localDefs = {
-      customFilter: {
-        type: "object",
-        properties: {
-          name: { type: "string" },
-        },
-      },
-    };
-
     const fields = schemaToFormFields(
       rawSchema as unknown as import("../../src/core/schemaFilter").DereferencedSchema,
-      localDefs,
+      { item: itemDef },
       new Set(["filters"]),
       "",
       "yaml",
     );
+    return fields.find((f) => f.path === "filters");
+  }
 
-    const listField = fields.find((f) => f.path === "filters") as ObjectListField | undefined;
-    expect(listField?.kind).toBe("object-list");
-    expect(listField?.itemFields.length).toBeGreaterThan(0);
-    expect(listField?.itemFields[0]?.path).toBe("name");
+  it("follows a $ref on items to detect an event-filter list", () => {
+    const listField = arrayOfRefField({
+      type: "object",
+      required: ["with"],
+      properties: { with: { type: "object" }, correlate: { type: "object" } },
+    }) as EventFilterListField | undefined;
+
+    expect(listField?.kind).toBe("event-filter-list");
+  });
+
+  it.each([
+    ["has no `correlate`", { required: ["with"], properties: { with: { type: "object" } } }],
+    ["does not require `with`", { properties: { with: { type: "object" }, correlate: {} } }],
+    ["is any other object", { properties: { name: { type: "string" } } }],
+  ])("does not treat an array of objects as an event-filter list when the item %s", (_, item) => {
+    expect(arrayOfRefField({ type: "object", ...item })?.kind).not.toBe("event-filter-list");
+  });
+});
+
+describe("schemaToFormFields discriminator — single required key with optional siblings", () => {
+  function findOneOf(fields: FormFieldDescriptor[], path: string): OneOfField | undefined {
+    for (const f of fields) {
+      if (f.kind === "one-of" && f.path === path) return f;
+      const nested =
+        f.kind === "object"
+          ? f.children
+          : f.kind === "one-of"
+            ? f.variants.flatMap((v) => v.fields)
+            : [];
+      const hit = findOneOf(nested, path);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  // EndpointConfiguration requires only `uri` but also declares `authentication`,
+  // so the required-key rule now selects it by `uri` rather than the generic
+  // object fallback.
+  it.each([
+    [{ uri: "https://example.com" }, true],
+    [{ uri: "https://example.com", authentication: { use: "petStoreAuth" } }, true],
+    [{ authentication: { use: "petStoreAuth" } }, false],
+  ])("Endpoint Configuration matches %j: %s", (data, expected) => {
+    const endpoint = findOneOf(getFormFieldsForNodeType("call"), "with.endpoint");
+    const config = endpoint?.variants.find((v) => v.label === "Endpoint Configuration");
+
+    expect(config?.matchesData(data)).toBe(expected);
   });
 });
