@@ -37,6 +37,7 @@ export type FormFieldDescriptor =
   | ChildTaskListField
   | StringListField
   | ObjectField
+  | EventFilterListField
   | ObjectListField
   | MapField
   | JsonField
@@ -116,13 +117,27 @@ export interface ChildTaskListField extends FieldBase {
 }
 
 /**
- * An array of schema-defined objects (e.g. `eventFilter[]` in `listen.to.all`).
+ * An array of schema-defined objects whose items match the `EventFilter` shape
+ * (`with` required, `correlate` optional). Rendered by the specialised
+ * `EventFilterListField` editor that understands `{ with, correlate }` items.
+ *
+ * Identified structurally: item schema has `"with"` in its `required` array
+ * AND has both `"with"` and `"correlate"` in its `properties`.
+ */
+export interface EventFilterListField extends FieldBase {
+  kind: "event-filter-list";
+  /** Schema-derived fields for a single item in the array. */
+  itemFields: FormFieldDescriptor[];
+}
+
+/**
+ * An array of schema-defined objects (generic case).
  * Each item is rendered as a collapsible card whose sub-fields are driven by
  * the schema-derived `itemFields` descriptors.
  *
  * Identified structurally: `type: "array"` with a structured `items` schema
- * that has its own `properties` or `oneOf` (i.e. not a plain string array and
- * not a task-list).
+ * that has its own `properties` or `oneOf` (i.e. not a plain string array,
+ * not a task-list, and not an event-filter array).
  */
 export interface ObjectListField extends FieldBase {
   kind: "object-list";
@@ -693,9 +708,12 @@ export function schemaToFormFields(
       continue;
     }
 
-    // ── Array of complex objects (e.g. eventFilter[] in listen.to.all) ────────
+    // ── Array of complex objects ───────────────────────────────────────────────
     // Triggered when items has its own properties/oneOf, or when items is a $ref
     // to a schema with those — not a plain string list and not a task-list.
+    // Emits "event-filter-list" for EventFilter item schemas (detected by the
+    // presence of "with" in required and "correlate" in properties); emits the
+    // generic "object-list" for all other complex item schemas.
     if (resolved.type === "array" && isPlainObject(resolved.items)) {
       let itemSchema = resolved.items as Record<string, unknown>;
       // Resolve a $ref on the items schema (e.g. items: { $ref: "#/$defs/eventFilter" })
@@ -716,8 +734,15 @@ export function schemaToFormFields(
         format,
       );
       if (itemFields.length > 0) {
+        // Detect EventFilter item schema: `with` is required and `correlate` is
+        // a declared property. This is the only schema shape that the specialised
+        // EventFilterListField editor understands.
+        const itemProps = isPlainObject(itemSchema.properties)
+          ? (itemSchema.properties as Record<string, unknown>)
+          : {};
+        const isEventFilterSchema = itemRequired.has("with") && "correlate" in itemProps;
         fields.push({
-          kind: "object-list",
+          kind: isEventFilterSchema ? "event-filter-list" : "object-list",
           path: fieldPath,
           label: deriveLabel(prop, key),
           ...withDesc(description),
