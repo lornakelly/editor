@@ -27,12 +27,7 @@ import { useSiblingTaskNames } from "./useSiblingTaskNames";
 import { useDiagramEditorContext } from "@/store/DiagramEditorContext";
 import {
   TaskFormContext,
-  collectWholeValuePaths,
-  computeSentinelDefaults,
   filterReadOnlyFields,
-  getNestedValue,
-  collectValueMapFields,
-  padRemovedPaths,
   selectedVariantIndex,
   VariantSnapshotsContext,
   type VariantSnapshots,
@@ -44,8 +39,8 @@ import {
   useTaskValidation,
 } from "./validation";
 import { useEditSession } from "@/side-panel/EditSession";
-import { flattenTask, setNestedPath } from "@/core/taskDraft";
-import { SENTINEL_KEY, sentinelPath } from "./sentinels";
+import { flattenTask } from "@/core/taskDraft";
+import { SENTINEL_KEY, readSentinels, sentinelPath } from "./sentinels";
 import { useDrillNavigation } from "./drill/useDrillNavigation";
 import { DrillContext, InlineLevelsContext } from "./drill/DrillContext";
 import type { VariantSelector } from "./drill/drill";
@@ -73,7 +68,7 @@ export type TaskFormProps = {
 export function TaskForm({ nodeType, task, nodeId, taskReference }: TaskFormProps) {
   const { t } = useI18n();
   const { isReadOnly, model, errors, taskReferences, contentFormat } = useDiagramEditorContext();
-  const { form } = useEditSession();
+  const { form, resetDraft } = useEditSession();
   const siblingTaskNames = useSiblingTaskNames(model, nodeId);
 
   // ── Resolve form fields from schema ───────────────────────────────────────
@@ -94,16 +89,12 @@ export function TaskForm({ nodeType, task, nodeId, taskReference }: TaskFormProp
   // sibling fields dirty.
   React.useEffect(() => {
     resetValidation();
-    const sentinelDefaults = computeSentinelDefaults(allFields, task as Record<string, unknown>);
-    form.reset({
-      ...(task as Record<string, unknown>),
-      ...(Object.keys(sentinelDefaults).length > 0 ? { [SENTINEL_KEY]: sentinelDefaults } : {}),
-    });
+    resetDraft(allFields, task as Record<string, unknown>);
     // `task` is intentionally excluded: on node change we always reset to the
     // current task snapshot. External task mutations (undo/redo) are handled
     // by the effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodeId, form, resetValidation]);
+  }, [nodeId, resetDraft, resetValidation]);
 
   // ── Reset when the model changes externally (undo/redo, same node) ────────
   // Fires when `task` identity or `allFields` changes while `nodeId` stays the same.
@@ -123,41 +114,12 @@ export function TaskForm({ nodeType, task, nodeId, taskReference }: TaskFormProp
     resetValidation();
     // Preserve the current sentinel selections (e.g. from a just-completed Apply)
     // so that variant combos stay on the user's chosen variant when the task has
-    // no value for a field (cleared/empty). Extract from the live form values.
-    const liveSentinels: Record<string, string> = {};
-    const liveValues = form.getValues() as Record<string, unknown>;
-    const liveOneof = liveValues.__oneof__ as Record<string, unknown> | undefined;
-    if (liveOneof) {
-      const suffix = ".__self__";
-      for (const [k, v] of Object.entries(flattenTask(liveOneof))) {
-        if (typeof v === "string" && k.endsWith(suffix)) {
-          liveSentinels[k.slice(0, -suffix.length)] = v;
-        }
-      }
-    }
-    const sentinelDefaults = computeSentinelDefaults(
-      allFields,
-      task as Record<string, unknown>,
-      liveSentinels,
-    );
-    const taskClone = structuredClone(task as Record<string, unknown>);
-    const resetVals: Record<string, unknown> = structuredClone({
-      ...taskClone,
-      ...(Object.keys(sentinelDefaults).length > 0 ? { [SENTINEL_KEY]: sentinelDefaults } : {}),
+    // no value for a field (cleared/empty).
+    resetDraft(allFields, task as Record<string, unknown>, {
+      previousTask: prevTask as Record<string, unknown>,
+      liveSentinels: readSentinels(form.getValues()),
     });
-    padRemovedPaths(
-      resetVals,
-      prevTask as Record<string, unknown>,
-      taskClone,
-      collectWholeValuePaths(allFields, taskClone),
-    );
-    for (const enumField of collectValueMapFields(allFields)) {
-      if (getNestedValue(task as Record<string, unknown>, enumField.path) === undefined) {
-        setNestedPath(resetVals, enumField.path, "");
-      }
-    }
-    form.reset(resetVals);
-  }, [task, nodeId, form, allFields, resetValidation]);
+  }, [task, nodeId, form, allFields, resetDraft, resetValidation]);
 
   // ── One-of variant snapshots ──────────────────────────────────────────────
   // Held at TaskForm level (survives drill unmount). Cleared on task change.
