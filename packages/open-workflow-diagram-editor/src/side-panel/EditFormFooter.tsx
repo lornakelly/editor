@@ -136,7 +136,7 @@ export function EditFormFooter({ node }: { node: RF.Node<BaseNodeData> }) {
     }
 
     const values = form.getValues();
-    const updated = buildTaskFromDraft({
+    const { task: updated, unparsed } = buildTaskFromDraft({
       task: task as Record<string, unknown>,
       fields: allFields,
       values,
@@ -144,7 +144,7 @@ export function EditFormFooter({ node }: { node: RF.Node<BaseNodeData> }) {
       liveValue: (path) => form.getValues(path as never) as unknown,
     });
     // Block commit if inner text fails to parse.
-    if (updated === null) return;
+    if (unparsed.length > 0) return;
     commitWorkflow(updateTask(model, taskId, updated as Specification.Task));
     resetValidation();
     // Reset to committed state; pass current sentinel labels so variant

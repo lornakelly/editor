@@ -100,13 +100,17 @@ export function TaskForm({ nodeType, task, nodeId, taskReference }: TaskFormProp
   // Fires when `task` identity or `allFields` changes while `nodeId` stays the same.
   // `task` changes on undo/redo; `allFields` changes when `contentFormat` switches.
   // Structural equality guards against spurious resets when the nodes array is
-  // rebuilt with identical content.
+  // rebuilt with identical content. A format switch resets even for an equal task:
+  // the draft's inner-object text is serialised in the format the fields parse.
   const prevTaskRef = React.useRef<Specification.Task>(task);
   const prevNodeIdRef = React.useRef(nodeId);
+  const prevAllFieldsRef = React.useRef(allFields);
   React.useEffect(() => {
     const nodeChanged = prevNodeIdRef.current !== nodeId;
     prevNodeIdRef.current = nodeId;
-    if (structuralEqual(task, prevTaskRef.current)) return;
+    const fieldsChanged = prevAllFieldsRef.current !== allFields;
+    prevAllFieldsRef.current = allFields;
+    if (!fieldsChanged && structuralEqual(task, prevTaskRef.current)) return;
     const prevTask = prevTaskRef.current;
     prevTaskRef.current = task;
 

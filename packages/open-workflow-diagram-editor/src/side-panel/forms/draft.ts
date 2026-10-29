@@ -17,10 +17,10 @@
 import { applyDirtyValues, flattenTask, setNestedPath } from "@/core/taskDraft";
 import { ROOT_ONE_OF_PATH, type FormFieldDescriptor } from "@/core/schemaToFormFields";
 import { structuralEqual } from "@/core/structuralEqual";
+import { isObjectNotArray } from "@/core/utils";
 import {
   deriveInnerObject,
   getValueMapInnerObject,
-  parseInnerObject,
   serializeInnerObject,
 } from "./customFields/innerObjectText";
 import {
@@ -90,7 +90,8 @@ export function buildFormValues(
 
 /**
  * Builds the task to commit on Apply by merging dirty paths onto the original task.
- * Returns null if value-map enum text fails to parse (prevents partial commits).
+ * A value-map enum whose inner text fails to parse is left as committed and named in
+ * `unparsed`; Apply must not commit while `unparsed` is non-empty (no partial commits).
  * liveValue reads current form values without RHF's default fallback.
  */
 export function buildTaskFromDraft({
@@ -105,11 +106,11 @@ export function buildTaskFromDraft({
   values: Record<string, unknown>;
   dirtyFields: object;
   liveValue: (path: string) => unknown;
-}): Task | null {
+}): { task: Task; unparsed: string[] } {
   // JSON/YAML fields are written whole to ensure deleted keys don't survive
   const jsonPaths = collectJsonPaths(fields);
   const flatValues = flattenTask(values, "", jsonPaths);
-  const flatDirty = new Set<string>();
+  let flatDirty = new Set<string>();
   const sentinelPaths = new Set<string>();
   for (const path of Object.keys(flattenTask(dirtyFields as Task, "", jsonPaths))) {
     if (path.startsWith(SENTINEL_PREFIX)) {
@@ -121,12 +122,18 @@ export function buildTaskFromDraft({
 
   // Convert value-map enum keys to their mapped values.
   const flatTask = flattenTask(task);
+  const unparsed: string[] = [];
   for (const enumField of collectValueMapFields(fields)) {
     const live = liveValue(enumField.path);
     const raw = typeof live === "string" || live === undefined ? live : flatValues[enumField.path];
     if (typeof raw === "string") {
       const innerObj = getValueMapInnerObject(enumField, raw, values);
-      if (innerObj === null) return null;
+      if (innerObj === null) {
+        // Keep the committed value, so the rest of the draft can still be measured.
+        unparsed.push(enumField.path);
+        flatDirty = new Set([...flatDirty].filter((path) => !isUnder(path, enumField.path)));
+        continue;
+      }
       flatValues[enumField.path] = valueMapModelValue(enumField, raw, innerObj);
       flatDirty.add(enumField.path);
     } else if (raw === undefined && flatTask[enumField.path] !== undefined) {
@@ -161,13 +168,14 @@ export function buildTaskFromDraft({
     }
   }
 
-  return applyDirtyValues(task, flatValues, flatDirty, {
+  const built = applyDirtyValues(task, flatValues, flatDirty, {
     sentinelPaths: liveSentinelPaths,
     sentinelConstWrites,
     sentinelStalePaths,
     formListPaths: collectFormListPaths(fields),
     sentinelPresenceKeys,
   });
+  return { task: built, unparsed };
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +199,13 @@ const isUnder = (path: string, ancestor: string) =>
   ancestor === ROOT_ONE_OF_PATH || path === ancestor || path.startsWith(`${ancestor}.`);
 
 /**
+ * True when a flattened `value` at `path` is an object `flattenTask` kept as a leaf only because
+ * it holds nothing but empty containers (`{ shell: {} }`), rather than a map or JSON value.
+ */
+const isEmptyContainer = (value: unknown, path: string, wholeValuePaths: ReadonlySet<string>) =>
+  isObjectNotArray(value) && !wholeValuePaths.has(path);
+
+/**
  * Compares the built task with the original to detect real changes.
  * More accurate than RHF's `isDirty` which doesn't reset and flags stale paths.
  * Variant switches count once, with any value at their own path; only user-edited fields under
@@ -211,22 +226,15 @@ export function computeDraftChanges({
   defaultValues: Record<string, unknown> | undefined;
   liveValue: (path: string) => unknown;
 }): DraftChanges {
-  const built = buildTaskFromDraft({ task, fields, values, dirtyFields, liveValue });
-  if (built === null) {
-    // Unparsed inner text counts as unsaved work.
-    const unparsed = collectValueMapFields(fields)
-      .filter(
-        (field) =>
-          field.innerObjectFormat !== undefined &&
-          parseInnerObject(
-            getNestedValue(values, innerTextPath(field.path)) as string | undefined,
-            field.innerObjectFormat,
-          ) === null,
-      )
-      .map((field) => field.path);
-    return { hasChanges: true, paths: unparsed.length > 0 ? unparsed : [""] };
-  }
-  if (structuralEqual(built, task)) return NO_DRAFT_CHANGES;
+  const { task: built, unparsed } = buildTaskFromDraft({
+    task,
+    fields,
+    values,
+    dirtyFields,
+    liveValue,
+  });
+  // Unparsed inner text counts as unsaved work, beside whatever else changed.
+  if (unparsed.length === 0 && structuralEqual(built, task)) return NO_DRAFT_CHANGES;
 
   const jsonPaths = collectJsonPaths(fields);
   const committedLabels = readSentinels(defaultValues ?? {});
@@ -249,9 +257,16 @@ export function computeDraftChanges({
     dirty.some((d) => isUnder(path, d) || (wholeAfter.has(path) && d.startsWith(`${path}.`)));
   const before = flattenTask(task, "", wholeBefore);
   const after = flattenTask(built, "", wholeAfter);
-  const differing = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+  const allPaths = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+  const differing = allPaths.filter(
     (path) =>
       !structuralEqual(before[path], after[path]) &&
+      // An emptied container is part of the change below it (clearing a variant's only field)
+      !(
+        (isEmptyContainer(before[path], path, wholeBefore) ||
+          isEmptyContainer(after[path], path, wholeAfter)) &&
+        allPaths.some((other) => other.startsWith(`${path}.`))
+      ) &&
       // A value at a switched one-of's own path is part of the switch
       !switched.includes(path) &&
       // Exclude paths that differ only as switch containers
@@ -259,6 +274,6 @@ export function computeDraftChanges({
       (!switched.some((oneOf) => isUnder(path, oneOf)) || (path in after && edited(path))),
   );
 
-  const paths = [...switched, ...differing];
+  const paths = [...switched, ...differing, ...unparsed];
   return { hasChanges: true, paths: paths.length > 0 ? paths : [""] };
 }

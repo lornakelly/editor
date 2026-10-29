@@ -22,7 +22,11 @@ import {
   computeDraftChanges,
 } from "../../../src/side-panel/forms/draft";
 import { getNestedValue } from "../../../src/side-panel/forms/taskFormContext";
-import { EMPTY_MAPS_WORKFLOW, RUN_PROCESS_TYPES_WORKFLOW } from "../../fixtures/workflows";
+import {
+  EMPTY_MAPS_WORKFLOW,
+  RUN_PROCESS_TYPES_WORKFLOW,
+  TRY_CATCH_BACKOFF_RICH_WORKFLOW,
+} from "../../fixtures/workflows";
 import { nodeAt, parseFixture } from "../../test-utils";
 
 type Task = Record<string, unknown>;
@@ -94,7 +98,7 @@ describe("buildTaskFromDraft", () => {
       { await: false, shell: { command: "ls" } },
     ],
   ])("%s", (_name, edit, dirtyFields, expectedRun) => {
-    expect(draft(edit, dirtyFields)?.run).toEqual(expectedRun);
+    expect(draft(edit, dirtyFields).task.run).toEqual(expectedRun);
   });
 });
 
@@ -194,6 +198,61 @@ describe("computeDraftChanges", () => {
     ],
   ])("counts %s", (_name, base, edit, dirtyFields, expected) => {
     expect(changes(edit, dirtyFields, base).paths).toEqual(expected);
+  });
+
+  // Apply keeps the selected process type, so the cleared task is `{ run: { shell: {} } }`:
+  // the emptied container is part of the cleared field, not a change of its own.
+  it("counts a cleared only field once, without its emptied container", () => {
+    const cleanUp = nodeAt(parseFixture(RUN_PROCESS_TYPES_WORKFLOW), "/do/cleanUp").data
+      .task as Task;
+    const result = changes(
+      (values) => {
+        (getNestedValue(values, "run.shell") as Task).command = "";
+      },
+      { run: { shell: { command: true } } },
+      cleanUp,
+    );
+    expect(result.paths).toEqual(["run.shell.command"]);
+  });
+});
+
+describe("drafts with unparseable inner-object text", () => {
+  const tryNode = nodeAt(parseFixture(TRY_CATCH_BACKOFF_RICH_WORKFLOW), "/do/tryGetPet/try");
+  const tryFields = getFormFieldsForNodeType(tryNode.type!, "yaml");
+  const tryTask = tryNode.data.task as Task;
+
+  /** `catch.as` edited and the backoff payload left as malformed YAML. */
+  function malformedDraft() {
+    const defaultValues = buildFormValues(tryFields, tryTask);
+    const values = structuredClone(defaultValues) as Task & { catch: Task };
+    values.catch.as = "err";
+    (values.catch.retry as Task).backoff = "exponential";
+    (getNestedValue(values, "__innertext__.catch.retry") as Task).backoff = "rate: [";
+    return {
+      task: tryTask,
+      fields: tryFields,
+      values,
+      dirtyFields: {
+        catch: { as: true, retry: { backoff: true } },
+        __innertext__: { catch: { retry: { backoff: true } } },
+      },
+      defaultValues,
+      liveValue: (path: string) => getNestedValue(values, path),
+    };
+  }
+
+  it("names the field whose text does not parse and leaves it as committed", () => {
+    const { task: built, unparsed } = buildTaskFromDraft(malformedDraft());
+
+    expect(unparsed).toEqual(["catch.retry.backoff"]);
+    expect(built.catch).toEqual({ ...(tryTask.catch as Task), as: "err" });
+  });
+
+  it("still counts the other edits beside the unparseable field", () => {
+    expect(computeDraftChanges(malformedDraft())).toEqual({
+      hasChanges: true,
+      paths: ["catch.as", "catch.retry.backoff"],
+    });
   });
 });
 
