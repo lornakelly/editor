@@ -16,6 +16,7 @@
 
 import * as React from "react";
 import { FormProvider, useForm, useFormState, useWatch, type UseFormReturn } from "react-hook-form";
+import { isAtOrBelow } from "@/core/paths";
 import type { FormFieldDescriptor } from "@/core/schemaToFormFields";
 import {
   buildFormValues,
@@ -222,4 +223,12 @@ export function useEditSession() {
 /** Returns draft changes against the baseline task. */
 export function useDraftChanges(): DraftChanges {
   return React.useContext(DraftChangesContext);
+}
+
+/**
+ * True when the draft changes the field at `path`: anything at or below it or, with `exact`, the path itself only.
+ */
+export function useFieldChanged(path: string, { exact = false }: { exact?: boolean } = {}) {
+  const { paths } = useDraftChanges();
+  return paths.some((changed) => (exact ? changed === path : isAtOrBelow(changed, path)));
 }
