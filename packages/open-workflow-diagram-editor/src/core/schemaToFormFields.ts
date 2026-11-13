@@ -41,7 +41,7 @@ export type FormFieldDescriptor =
   | StringListField
   | ObjectField
   | SectionField
-  | EventFilterListField
+  | ObjectListField
   | MapField
   | JsonField
   | OrderedMapField
@@ -129,17 +129,18 @@ export interface ChildTaskListField extends FieldBase {
 }
 
 /**
- * An array of schema-defined objects whose items match the `EventFilter` shape
- * (`with` required, `correlate` optional). Rendered by the specialised
- * `EventFilterListField` editor that understands `{ with, correlate }` items.
- *
- * Identified structurally: item schema has `"with"` in its `required` array
- * AND has both `"with"` and `"correlate"` in its `properties`.
+ * A list whose items are a schema-defined object (`type: object` with `properties`): each entry
+ * is edited as its own level. Single-key maps keep their own kinds (`ordered-map`,
+ * `child-task-list`). Only listen's `to.all` / `to.any` today.
  */
-export interface EventFilterListField extends FieldBase {
-  kind: "event-filter-list";
-  /** Schema-derived fields for a single item in the array. */
+export interface ObjectListField extends FieldBase {
+  kind: "object-list";
+  /** The item schema's fields, paths relative to one item. */
   itemFields: FormFieldDescriptor[];
+  /** Singular noun for one item: the items schema's title, else the list's label. */
+  itemLabel: string;
+  /** The items schema's `$defs` name when it is a `$ref` ("eventFilter"), for the summary registry. */
+  itemDef?: string;
 }
 
 /* A map where order is significant, written as array of single key objects with a user defined name e.g switch
@@ -154,6 +155,8 @@ export interface ObjectField extends FieldBase {
   kind: "object";
   children: FormFieldDescriptor[];
   atLeastOne?: true;
+  /** Set on an object-list entry synthesized by the side panel: the list's path. */
+  entryOf?: string;
 }
 
 /* Task base fields */
@@ -170,7 +173,27 @@ export const COMMON_FIELDS_PATH = "__common__";
 
 export interface MapField extends FieldBase {
   kind: "map";
+  /**
+   * Set on an "Other fields" map: the keys an object allows beyond its own properties
+   * (`additionalProperties` beside `properties`). Its entries live in that object, beside the
+   * fixed fields, so its `path` (`<objectPath>.__other__`) is only its identity: nothing is ever
+   * read or written there. Read and write entries with `side-panel/forms/otherFields.ts`.
+   */
+  otherFieldsOf?: OtherFieldsOf;
 }
+
+export interface OtherFieldsOf {
+  /** The object whose extra keys the map edits. */
+  objectPath: string;
+  /** The object's own properties, which have their own fields and are never map entries. */
+  fixedKeys: readonly string[];
+}
+
+/** The last segment of an "Other fields" map's identity path (see `MapField.otherFieldsOf`). */
+export const OTHER_FIELDS_KEY = "__other__";
+
+/** English fallback for an "Other fields" map's label; the side panel translates it. */
+export const OTHER_FIELDS_LABEL = "Other fields";
 
 /**
  * An ordered list of strings — `type: "array"` with `items: { type: "string" }`.
@@ -353,6 +376,25 @@ function isMapSchema(schema: Record<string, unknown>): boolean {
 }
 
 /**
+ * The "Other fields" map of an object schema that allows keys beyond its own `properties`
+ * (`additionalProperties` set and not `false`), e.g. CloudEvents extension attributes beside an
+ * event's `type` and `source`. Structural, so any schema with this shape gets one.
+ */
+function otherFieldsMap(schema: Record<string, unknown>, objectPath: string): MapField | undefined {
+  const extra = schema.additionalProperties;
+  if (extra === undefined || extra === false || !isObjectNotArray(schema.properties)) {
+    return undefined;
+  }
+  return {
+    kind: "map",
+    path: joinPath(objectPath, OTHER_FIELDS_KEY),
+    label: OTHER_FIELDS_LABEL,
+    required: false,
+    otherFieldsOf: { objectPath, fixedKeys: Object.keys(schema.properties) },
+  };
+}
+
+/**
  * Returns the ordered variant keys if every oneOf candidate has exactly one
  * property whose value schema is an empty-object marker.
  */
@@ -444,22 +486,6 @@ function orderedMapEntrySchema(
 }
 
 /**
- * Returns true if the items schema matches the EventFilter shape:
- * `with` is required AND both `with` and `correlate` are in properties.
- */
-function isEventFilterItemSchema(items: Record<string, unknown>): boolean {
-  const required = items.required;
-  const props = items.properties;
-  return (
-    isObjectNotArray(props) &&
-    Array.isArray(required) &&
-    (required as string[]).includes("with") &&
-    "with" in (props as Record<string, unknown>) &&
-    "correlate" in (props as Record<string, unknown>)
-  );
-}
-
-/**
  * Returns true if the schema represents a flow-directive field — a combobox
  * that combines a set of named flow directives with a free-text task reference.
  *
@@ -506,6 +532,11 @@ function deriveLabel(schema: Record<string, unknown>, key: string): string {
     }
   }
   return key;
+}
+
+/** "EventFilter" → "Event Filter". */
+function titleToWords(title: string): string {
+  return title.replace(/([a-z])([A-Z])/g, "$1 $2");
 }
 
 /** Formats a schema title or camelCase identifier into a user-friendly label. */
@@ -684,12 +715,10 @@ export function schemaToFormFields(
       continue;
     }
 
-    // ── Event-filter list / Generic object-list ─────────────────────────────
-    // Resolve the items schema (following one $ref) for both specialised and
-    // generic array field kinds.
+    // ── Object list ─────────────────────────────────────────────────────────
     const rawItems = arrayItemsSchema(resolved, localDefs);
     if (rawItems) {
-      // Follow one level of $ref so that both checks work on the concrete schema.
+      // Follow one level of $ref so the check works on the concrete schema.
       let itemsResolved: Record<string, unknown> = rawItems;
       if (typeof rawItems.$ref === "string") {
         const r = resolveRef(rawItems.$ref, localDefs);
@@ -697,35 +726,29 @@ export function schemaToFormFields(
       }
 
       if (itemsResolved.type === "object" && itemsResolved.properties) {
-        if (isEventFilterItemSchema(itemsResolved)) {
-          const itemRequired = new Set<string>(
-            Array.isArray(itemsResolved.required) ? (itemsResolved.required as string[]) : [],
-          );
-          const itemFields = schemaToFormFields(
+        const itemRequired = new Set<string>(
+          Array.isArray(itemsResolved.required) ? (itemsResolved.required as string[]) : [],
+        );
+        const listLabel = deriveLabel(prop, key);
+        const itemDef =
+          typeof rawItems.$ref === "string" ? rawItems.$ref.split("/").pop() : undefined;
+        fields.push({
+          kind: "object-list",
+          path: fieldPath,
+          label: listLabel,
+          ...withDesc(description),
+          required: isRequired,
+          itemFields: schemaToFormFields(
             itemsResolved as DereferencedSchema,
             localDefs,
             itemRequired,
             "",
             format,
-          );
-          fields.push({
-            kind: "event-filter-list",
-            path: fieldPath,
-            label: deriveLabel(prop, key),
-            ...withDesc(description),
-            required: isRequired,
-            itemFields,
-          });
-        } else {
-          fields.push({
-            kind: "json",
-            path: fieldPath,
-            label: deriveLabel(prop, key),
-            ...withDesc(description),
-            required: isRequired,
-            format,
-          });
-        }
+          ),
+          itemLabel:
+            typeof itemsResolved.title === "string" ? titleToWords(itemsResolved.title) : listLabel,
+          ...(itemDef ? { itemDef } : {}),
+        });
         continue;
       }
     }
@@ -996,13 +1019,14 @@ export function schemaToFormFields(
         fields.push(onlyChild);
         continue;
       }
+      const otherFields = otherFieldsMap(resolved, fieldPath);
       fields.push({
         kind: "object",
         path: fieldPath,
         label: deriveLabel(prop, key),
         ...withDesc(description),
         required: isRequired,
-        children,
+        children: otherFields ? [...children, otherFields] : children,
         ...atLeastOneOf(resolved),
       });
       continue;

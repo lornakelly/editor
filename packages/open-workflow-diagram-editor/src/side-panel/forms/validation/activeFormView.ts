@@ -103,7 +103,7 @@ export function buildActiveFormView(
         });
       } else if (!isInternalPath(field.path) && !view.leaves.has(field.path)) {
         view.leaves.set(field.path, field);
-        if (field.kind === "event-filter-list") view.eventFilterLists.add(field.path);
+        if (field.kind === "object-list") view.eventFilterLists.add(field.path);
       }
     }
   };

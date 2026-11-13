@@ -78,7 +78,7 @@ export function FieldControl({ field, id }: FieldControlProps) {
       return <ChildTaskListField field={field} />;
     case "string-list":
       return <StringListField field={field} />;
-    case "event-filter-list":
+    case "object-list":
       return <EventFilterListField field={field} />;
     case "json":
       return <StructuredValueField field={field} {...idProp} />;

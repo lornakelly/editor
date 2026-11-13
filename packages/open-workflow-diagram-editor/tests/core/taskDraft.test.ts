@@ -15,7 +15,13 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { unflattenValues, applyDirtyValues, flattenTask } from "../../src/core/taskDraft";
+import {
+  unflattenValues,
+  applyDirtyValues,
+  deletePath,
+  flattenTask,
+  setNestedPath,
+} from "../../src/core/taskDraft";
 import { switchCase } from "../test-utils";
 import { ROOT_ONE_OF_PATH } from "../../src/core";
 import { ADD_FIELDS_WORKFLOW, SET_EXAMPLE_WORKFLOW } from "../fixtures/workflows";
@@ -582,5 +588,27 @@ describe("applyDirtyValues: removed fields", () => {
   it("never deletes the task type key", () => {
     const result = applyDirtyValues(createPet, { with: undefined }, new Set(["with"]));
     expect(result).toHaveProperty("call", "http");
+  });
+});
+
+describe("path helpers inside lists", () => {
+  const task = { listen: { to: { all: [{ with: { type: "a" } }, { with: { type: "b" } }] } } };
+
+  it("setNestedPath writes into an entry, copying the list, never replacing it", () => {
+    const target = structuredClone(task);
+    const before = target.listen.to.all;
+    setNestedPath(target, "listen.to.all.1.with.type", "c");
+    expect(target.listen.to.all).toHaveLength(2);
+    expect(target.listen.to.all[1]).toEqual({ with: { type: "c" } });
+    expect(target.listen.to.all).not.toBe(before);
+    expect(before[1]).toEqual({ with: { type: "b" } });
+  });
+
+  it("deletePath deletes inside an entry and never splices the list", () => {
+    const target = { to: { all: [{ with: { type: "a" }, correlate: {} }] } };
+    deletePath(target, "to.all.0.correlate".split("."), { prune: true });
+    expect(target).toEqual({ to: { all: [{ with: { type: "a" } }] } });
+    deletePath(target, "to.all.0.with.type".split("."), { prune: true });
+    expect(target).toEqual({ to: { all: [{}] } });
   });
 });

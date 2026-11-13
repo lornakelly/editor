@@ -19,6 +19,12 @@ import { Plus } from "lucide-react";
 import { get, useFormContext, useFormState } from "react-hook-form";
 import { useI18n } from "@openworkflowspec/i18n";
 import type { FormFieldDescriptor } from "../../core/schemaToFormFields";
+import {
+  hasMapEntries,
+  isOtherFieldsMap,
+  mapEntriesOf,
+  mapEntryPath,
+} from "../../core/otherFields";
 import { useEditSession } from "../EditSession";
 import { FormField } from "./FormField";
 import { useAddedFields } from "./addedFields";
@@ -115,6 +121,10 @@ function EditableFieldList({ fields, before, ownerPath, atLeastOne }: FieldListP
   // Field is present if: (1) untouched and in committed task, or (2) touched with a real value
   // Empty `{}` counts as present; `""` padding and `undefined` don't
   const isPresent = (field: FormFieldDescriptor) => {
+    // An "Other fields" map's entries are in its object (its own path holds nothing): present
+    // while the draft has one. Its editor marks it added on its first edit, so emptying its rows
+    // doesn't turn it back into a chip.
+    if (isOtherFieldsMap(field)) return hasMapEntries(field, getValues());
     if (get(dirtyFields, sentinelPath(field.path)) !== undefined) return true;
     const committed = get(committedTask, field.path) !== undefined;
     if (get(dirtyFields, field.path) === undefined) return committed;
@@ -147,7 +157,12 @@ function EditableFieldList({ fields, before, ownerPath, atLeastOne }: FieldListP
 
   function handleAdd(field: FormFieldDescriptor) {
     // Adding back a field removed in this draft restores its committed value: no change left.
-    if (get(committedTask, field.path) !== undefined) {
+    if (isOtherFieldsMap(field)) {
+      const { defaultValues } = liveFormState();
+      for (const [key, committed] of Object.entries(mapEntriesOf(field, defaultValues) ?? {})) {
+        setValue(mapEntryPath(field, key), structuredClone(committed), { shouldDirty: true });
+      }
+    } else if (get(committedTask, field.path) !== undefined) {
       const committed = get(liveFormState().defaultValues, field.path) as unknown;
       setValue(field.path, structuredClone(committed), { shouldDirty: true });
     }
@@ -175,7 +190,15 @@ function EditableFieldList({ fields, before, ownerPath, atLeastOne }: FieldListP
       if (editorPath === undefined) return;
       setValue(editorPath, get(defaultValues, editorPath), { shouldDirty: true });
     });
-    setValue(field.path, undefined, { shouldDirty: true });
+    if (isOtherFieldsMap(field)) {
+      // Its entries, never its path (nothing is there) nor its object (the fixed fields' too)
+      for (const key of Object.keys(mapEntriesOf(field, getValues()) ?? {})) {
+        setValue(mapEntryPath(field, key), undefined, { shouldDirty: true });
+        clearErrors(mapEntryPath(field, key));
+      }
+    } else {
+      setValue(field.path, undefined, { shouldDirty: true });
+    }
     clearErrors(field.path);
     drop(field.path);
     // The footer count and row badges read the task validation, not RHF's errors

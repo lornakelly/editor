@@ -23,7 +23,9 @@ import { Input } from "../ui/input";
 import type { MapField } from "../../../core/schemaToFormFields";
 import { isObjectNotArray } from "../../../core/utils";
 import { structuralEqual } from "../../../core/structuralEqual";
-import { getNestedValue, useTaskFormContext } from "../taskFormContext";
+import { isFixedKey, mapEntriesOf, mapEntryPath } from "../../../core/otherFields";
+import { AddedFieldsContext } from "../addedFields";
+import { useTaskFormContext } from "../taskFormContext";
 import { ChangedDot } from "../FieldLabel";
 import { useFieldChanged } from "../../EditSession";
 import { useFieldError, FieldWithError, formatEntryCount, newId } from "./fieldHelpers";
@@ -137,11 +139,11 @@ export function KeyValueMapField({ field, showLabel = true }: KeyValueMapFieldPr
   // If the RHF value is a plain object, derive rows from it; otherwise fall back
   // to taskData (the committed task snapshot).
   const [rows, setRows] = React.useState<MapEntry[]>(() => {
-    const rhfValue = getValues(field.path as never);
+    const rhfValue = mapEntriesOf(field, getValues());
     if (isObjectNotArray(rhfValue)) {
       return extractEntries(rhfValue);
     }
-    return extractEntries(getNestedValue(taskData, field.path));
+    return extractEntries(mapEntriesOf(field, taskData));
   });
 
   // Re-sync rows on any form reset (node switch, undo/redo, or cancel).
@@ -154,7 +156,7 @@ export function KeyValueMapField({ field, showLabel = true }: KeyValueMapFieldPr
   React.useEffect(() => {
     if (prevDefaultValuesRef.current === defaultValues) return;
     prevDefaultValuesRef.current = defaultValues;
-    setRows(extractEntries(defaultValues ? getNestedValue(defaultValues, field.path) : undefined));
+    setRows(extractEntries(mapEntriesOf(field, defaultValues)));
   }, [defaultValues, field.path]);
 
   // Keep a stable ref to rows so event handlers can read the current snapshot
@@ -166,11 +168,26 @@ export function KeyValueMapField({ field, showLabel = true }: KeyValueMapFieldPr
 
   // ── Entry mutation helpers ────────────────────────────────────────────────
 
+  // An "Other fields" map stays on screen once edited, even with every row emptied: its entries
+  // are its only trace in the draft (its own path holds nothing), so without this, clearing the
+  // last key would turn it back into a chip mid-edit. ✕ drops it from `added` as usual.
+  const addedFields = React.useContext(AddedFieldsContext);
+  const keepShown = React.useCallback(() => {
+    if (field.otherFieldsOf === undefined || addedFields === null) return;
+    if (!addedFields.added.has(field.path)) addedFields.add(field.path, field.label);
+  }, [field, addedFields]);
+
+  // A row whose key is one of the object's own properties (`type` typed into an event's
+  // "Other fields") is held here and never written while it is typed: it moves to that
+  // property's field when focus leaves the row (`moveFixedKeyRow`).
+  const isHeld = React.useCallback((key: string) => isFixedKey(field, key), [field]);
+
   const clearKey = React.useCallback(
     (key: string) => {
-      setValue(`${field.path}.${key}` as never, undefined as never, { shouldDirty: true });
+      if (isHeld(key)) return;
+      setValue(mapEntryPath(field, key) as never, undefined as never, { shouldDirty: true });
     },
-    [field.path, setValue],
+    [field, setValue, isHeld],
   );
 
   const updateRow = React.useCallback(
@@ -179,48 +196,67 @@ export function KeyValueMapField({ field, showLabel = true }: KeyValueMapFieldPr
       if (!current) return;
 
       const parsed = parseValue(rawValueStr);
+      keepShown();
 
       // Rename: clear the old key before registering the new one.
       if (current.key !== newKey && current.key !== "") {
         clearKey(current.key);
       }
-      if (newKey !== "") {
+      if (newKey !== "" && !isHeld(newKey)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setValue(`${field.path}.${newKey}` as any, parsed, { shouldDirty: true });
+        setValue(mapEntryPath(field, newKey) as any, parsed, { shouldDirty: true });
       }
 
       setRows((prev) => prev.map((r) => (r.id === id ? { ...r, key: newKey, value: parsed } : r)));
     },
-    [field.path, setValue, clearKey],
+    [field, setValue, clearKey, isHeld, keepShown],
   );
 
   const addRow = React.useCallback(() => {
+    keepShown();
     setRows((prev) => [...prev, { id: newId(), key: "", value: "" }]);
-  }, []);
+  }, [keepShown]);
 
   const deleteRow = React.useCallback(
     (id: string) => {
       const current = rowsRef.current.find((r) => r.id === id);
+      keepShown();
       if (current?.key) {
         clearKey(current.key);
       }
       setRows((prev) => prev.filter((r) => r.id !== id));
       validateField?.(field.path);
     },
-    [clearKey, validateField, field.path],
+    [clearKey, validateField, field.path, keepShown],
+  );
+
+  // A held row moves to its property's field once focus leaves it with a value: the last value
+  // wins, as with a key typed twice. Empty, it stays held, so it can never clear that field.
+  const moveFixedKeyRow = React.useCallback(
+    (id: string) => {
+      const current = rowsRef.current.find((r) => r.id === id);
+      if (!current || !isHeld(current.key) || serializeValue(current.value) === "") return;
+      setValue(mapEntryPath(field, current.key) as never, current.value as never, {
+        shouldDirty: true,
+      });
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      validateField?.(mapEntryPath(field, current.key));
+    },
+    [field, setValue, isHeld, validateField],
   );
 
   // ── Count badge ───────────────────────────────────────────────────────────
-  const filledCount = rows.filter((r) => r.key !== "").length;
+  const filledCount = rows.filter((r) => r.key !== "" && !isHeld(r.key)).length;
   const countLabel = formatEntryCount(t, filledCount);
   // ── Changed markers ───────────────────────────────────────────────────────
   // The map counts as one change; each entry that differs from the reset baseline gets a dot.
   const changed = useFieldChanged(field.path);
-  const baselineMap = defaultValues ? getNestedValue(defaultValues, field.path) : undefined;
-  const currentMap = getValues(field.path as never) as unknown;
+  const baselineMap = mapEntriesOf(field, defaultValues);
+  const currentMap = mapEntriesOf(field, getValues());
   const isEntryChanged = (row: MapEntry) =>
     changed &&
     row.key !== "" &&
+    !isHeld(row.key) &&
     !(
       isObjectNotArray(baselineMap) &&
       isObjectNotArray(currentMap) &&
@@ -284,11 +320,12 @@ export function KeyValueMapField({ field, showLabel = true }: KeyValueMapFieldPr
                 onUpdate={(newKey, newValue) => updateRow(row.id, newKey, newValue)}
                 onDelete={() => deleteRow(row.id)}
                 onBlur={() => {
-                  if (row.key !== "") {
-                    validateField?.(`${field.path}.${row.key}`);
+                  if (row.key !== "" && !isHeld(row.key)) {
+                    validateField?.(mapEntryPath(field, row.key));
                   }
                   validateField?.(field.path);
                 }}
+                onRowLeave={() => moveFixedKeyRow(row.id)}
                 hasError={errorMessage !== undefined}
               />
             ))}
@@ -320,6 +357,7 @@ export function MapRow({
   onUpdate,
   onDelete,
   onBlur,
+  onRowLeave,
   hasError,
   valueClassName,
   changed = false,
@@ -330,6 +368,8 @@ export function MapRow({
   onDelete: () => void;
   /** Called when either input loses focus; triggers validation for this entry. */
   onBlur?: () => void;
+  /** Called when focus leaves the row altogether (not when it moves from key to value). */
+  onRowLeave?: () => void;
   /** When true, marks both inputs aria-invalid (map-level error is present). */
   hasError?: boolean;
   /** Extra CSS class(es) appended to the value input, e.g. for expression styling. */
@@ -339,7 +379,12 @@ export function MapRow({
   const serializedValue = serializeValue(row.value);
 
   return (
-    <div className="dec-map-row">
+    <div
+      className="dec-map-row"
+      onBlur={(e) => {
+        if (onRowLeave !== undefined && !e.currentTarget.contains(e.relatedTarget)) onRowLeave();
+      }}
+    >
       {changed && (
         <span className="dec-map-gutter-dot">
           <ChangedDot />

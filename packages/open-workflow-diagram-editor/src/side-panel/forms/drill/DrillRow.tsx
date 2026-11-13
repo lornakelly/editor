@@ -21,6 +21,7 @@ import { useI18n } from "@openworkflowspec/i18n";
 import { countChangedUnder, countFieldErrors, hasDraftValue } from "./rowCounts";
 import { useDraftChanges } from "../../EditSession";
 import { isObjectNotArray } from "../../../core/utils";
+import { isOtherFieldsMap, mapEntriesIn, mapValuePath } from "../../../core/otherFields";
 import { drillLabel, type DrillTarget } from "./drill";
 import { useDrill } from "./DrillContext";
 import { filterReadOnlyFields, useTaskFormContext } from "../taskFormContext";
@@ -74,6 +75,12 @@ export function DrillRow({
 
   /** Only re-renders when values change, not on every keystroke */
   const values = useWatch({ control, name: childPaths as never }) as unknown as unknown[];
+  // A map's entries, or an object's value: an "Other fields" map among an object's children keeps
+  // its entries in that object, beside the fixed fields, so its own path holds nothing.
+  const mapValue = useWatch({
+    control,
+    name: (field.kind === "map" ? mapValuePath(field) : field.path) as never,
+  }) as unknown;
   const { errors } = useFormState({ control, name: childPaths as never });
   const { paths: changed } = useDraftChanges();
   const changedCount = childPaths.reduce((sum, path) => sum + countChangedUnder(changed, path), 0);
@@ -94,7 +101,7 @@ export function DrillRow({
   let summary: string;
   if (field.kind === "map" || (field.kind === "one-of" && countEntries)) {
     // A removed entry stays in the draft as `undefined` until Apply drops it.
-    const map = values[0];
+    const map = field.kind === "map" ? mapEntriesIn(field, mapValue) : values[0];
     const entries = isObjectNotArray(map)
       ? Object.values(map).filter((value) => value !== undefined).length
       : 0;
@@ -113,7 +120,11 @@ export function DrillRow({
     ).length;
     summary = `${setCount} ${t(setCount === 1 ? "sidebar.drill.field" : "sidebar.drill.fields")}`;
   } else {
-    const setCount = values.filter(hasDraftValue).length;
+    const setCount = field.children.filter((child, index) =>
+      isOtherFieldsMap(child)
+        ? Object.keys(mapEntriesIn(child, mapValue) ?? {}).length > 0
+        : hasDraftValue(values[index]),
+    ).length;
     summary = `${setCount} ${t("sidebar.drill.of")} ${field.children.length} ${t("sidebar.drill.set")}`;
   }
   const changedText = `${changedCount} ${t("sidebar.form.changed")}`;

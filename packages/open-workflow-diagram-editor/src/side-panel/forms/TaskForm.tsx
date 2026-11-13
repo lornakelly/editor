@@ -15,6 +15,7 @@
  */
 
 import * as React from "react";
+import { withOtherFieldsLabel } from "../../core/otherFields";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import "./forms.css";
 import type { Specification } from "@openworkflowspec/sdk";
@@ -77,9 +78,11 @@ export function TaskForm({ nodeType, task, nodeId, taskReference, topLevelFooter
   const siblingTaskNames = useSiblingTaskNames(model, nodeId);
 
   // ── Resolve form fields from schema ───────────────────────────────────────
+  // "Other fields" is the editor's own label, not schema text: translated here, once.
+  const otherFieldsLabel = t("sidebar.map.otherFields");
   const allFields = React.useMemo(
-    () => getFormFieldsForNodeType(nodeType, contentFormat),
-    [nodeType, contentFormat],
+    () => withOtherFieldsLabel(getFormFieldsForNodeType(nodeType, contentFormat), otherFieldsLabel),
+    [nodeType, contentFormat, otherFieldsLabel],
   );
 
   const { resetValidation } = useTaskValidation();
