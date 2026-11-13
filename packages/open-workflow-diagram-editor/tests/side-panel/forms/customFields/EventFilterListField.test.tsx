@@ -41,7 +41,7 @@ import { en } from "../../../../src/i18n/locales/en";
 import { EventFilterListField } from "../../../../src/side-panel/forms/customFields/EventFilterListField";
 import { TaskFormContext } from "../../../../src/side-panel/forms/taskFormContext";
 import type {
-  EventFilterListField as EventFilterListFieldDescriptor,
+  ObjectListField as EventFilterListFieldDescriptor,
   ObjectField,
 } from "../../../../src/core/schemaToFormFields";
 
@@ -51,11 +51,12 @@ import type {
 
 /** Minimal EventFilterListField descriptor mimicking listen.to.all */
 const allField: EventFilterListFieldDescriptor = {
-  kind: "event-filter-list",
+  kind: "object-list",
   path: "listen.to.all",
   label: "all",
   required: true,
   itemFields: [],
+  itemLabel: "Event",
 };
 
 const TWO_FILTERS = [
@@ -721,11 +722,12 @@ const withObjectField: ObjectField = {
 };
 
 const fieldWithLabels: EventFilterListFieldDescriptor = {
-  kind: "event-filter-list",
+  kind: "object-list",
   path: "listen.to.all",
   label: "all",
   required: true,
   itemFields: [withObjectField],
+  itemLabel: "Event",
 };
 
 describe("EventFilterListField — deriveWithFieldLabels / label rendering", () => {

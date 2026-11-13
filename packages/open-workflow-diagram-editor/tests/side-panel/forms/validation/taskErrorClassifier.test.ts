@@ -422,7 +422,14 @@ describe("NOISE_KEYWORDS", () => {
 
 describe("classifyErrorPath in an event-filter list", () => {
   const listFields: FormFieldDescriptor[] = [
-    { kind: "event-filter-list", path: "to.any", label: "any", required: true, itemFields: [] },
+    {
+      kind: "object-list",
+      path: "to.any",
+      label: "any",
+      required: true,
+      itemFields: [],
+      itemLabel: "Event",
+    },
   ];
   const view = buildActiveFormView(listFields, {}, {});
   const place = (path: string) => classifyErrorPath(path, "required", {}, view);

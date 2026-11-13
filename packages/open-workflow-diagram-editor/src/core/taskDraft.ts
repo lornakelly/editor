@@ -69,13 +69,20 @@ export function setNestedPath(obj: Record<string, unknown>, dotPath: string, val
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i]!;
     const next = Object.prototype.hasOwnProperty.call(current, part) ? current[part] : undefined;
-    current[part] =
-      next && typeof next === "object" && !Array.isArray(next)
+    // Copy on write: a list entry path (`all.1.with`) copies the list, never replaces it.
+    current[part] = isListIndexInto(next, parts[i + 1]!)
+      ? [...next]
+      : next && typeof next === "object" && !Array.isArray(next)
         ? { ...(next as Record<string, unknown>) }
         : {};
     current = current[part] as Record<string, unknown>;
   }
   current[parts[parts.length - 1]!] = value;
+}
+
+/** Whether `segment` indexes into `value` as a list entry (`all.1` on an array). */
+export function isListIndexInto(value: unknown, segment: string): value is unknown[] {
+  return Array.isArray(value) && /^\d+$/.test(segment);
 }
 
 /**
@@ -367,13 +374,28 @@ export function deletePath(
   if (parts.some((p) => !isSafeKey(p))) {
     throw new Error(`Unsafe path segment in: ${parts.join(".")}`);
   }
+  // Never splice a list: removing an entry is the list editor's job, not a path delete's.
+  if (Array.isArray(obj)) {
+    if (parts.length === 1) return;
+    const entry: unknown = obj[Number(parts[0])];
+    if (/^\d+$/.test(parts[0]!) && entry !== null && typeof entry === "object") {
+      // Pruning stops at the entry: an emptied entry stays in the list.
+      deletePath(entry as Record<string, unknown>, parts.slice(1), { prune: options.prune });
+    }
+    return;
+  }
   if (parts.length === 1) {
     delete obj[parts[0]!];
     return;
   }
   const head = parts[0]!;
   const child = obj[head];
-  if (child !== null && typeof child === "object" && !Array.isArray(child)) {
+  if (Array.isArray(child)) {
+    // The list itself is never pruned, however empty its entries become.
+    deletePath(child as unknown as Record<string, unknown>, parts.slice(1), options);
+    return;
+  }
+  if (child !== null && typeof child === "object") {
     deletePath(child as Record<string, unknown>, parts.slice(1), { prune: options.prune });
     // Remove the parent if it became empty after deletion.
     if (options.prune && head !== options.protectedKey && Object.keys(child).length === 0) {

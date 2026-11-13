@@ -21,7 +21,7 @@ import { useI18n } from "@openworkflowspec/i18n";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import type {
-  EventFilterListField as EventFilterListFieldDescriptor,
+  ObjectListField as EventFilterListFieldDescriptor,
   ObjectField,
 } from "../../../core/schemaToFormFields";
 import { RUNTIME_EXPRESSION_PATTERN } from "../../../core/schemaToFormFields";

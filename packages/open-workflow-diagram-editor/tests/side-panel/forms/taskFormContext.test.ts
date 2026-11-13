@@ -29,6 +29,11 @@ import {
 } from "../../../src/side-panel/forms/taskFormContext";
 import { getFormFieldsForNodeType } from "../../../src/core";
 import {
+  flattenSentinels,
+  SENTINEL_KEY,
+  sentinelPath,
+} from "../../../src/side-panel/forms/sentinels";
+import {
   COMMON_FIELDS_PATH,
   type EnumField,
   type FormFieldDescriptor,
@@ -69,6 +74,13 @@ describe("getNestedValue", () => {
 
   it("returns undefined when an intermediate segment is an array", () => {
     expect(getNestedValue({ a: [1, 2] }, "a.b")).toBeUndefined();
+  });
+
+  it("reads into list entries", () => {
+    const task = { listen: { to: { all: [{ with: { type: "a" } }, { with: { type: "b" } }] } } };
+    expect(getNestedValue(task, "listen.to.all.1.with.type")).toBe("b");
+    expect(getNestedValue(task, "listen.to.all.2.with")).toBeUndefined();
+    expect(getNestedValue(task, "listen.to.all.x")).toBeUndefined();
   });
 
   it("returns undefined for an empty data object", () => {
@@ -371,7 +383,7 @@ describe("forEachField", () => {
 // ---------------------------------------------------------------------------
 
 describe("collectFormListPaths", () => {
-  it("collects paths for ordered-map and event-filter-list fields recursively", () => {
+  it("collects paths for ordered-map and object-list fields recursively", () => {
     const fields: FormFieldDescriptor[] = [
       {
         kind: "ordered-map",
@@ -387,11 +399,12 @@ describe("collectFormListPaths", () => {
         required: false,
         children: [
           {
-            kind: "event-filter-list",
+            kind: "object-list",
             path: "listen.to",
             label: "To",
             required: false,
             itemFields: [],
+            itemLabel: "Event",
           },
         ],
       },
@@ -679,5 +692,18 @@ describe("computeSentinelDefaults", () => {
         detail: { __self__: "Expression Error Details" },
       },
     });
+  });
+});
+
+describe("computeSentinelDefaults inside object lists", () => {
+  it("seeds each committed entry's options from its own data", () => {
+    const task = {
+      listen: { to: { all: [{ with: { source: "${ .s }" } }, { with: { source: "https://x" } }] } },
+    };
+    const fields = getFormFieldsForNodeType("listen");
+    const flat = flattenSentinels({ [SENTINEL_KEY]: computeSentinelDefaults(fields, task) });
+    expect(flat[sentinelPath("listen.to.all.0.with.source")]).toMatch(/Expression/);
+    expect(flat[sentinelPath("listen.to.all.1.with.source")]).not.toMatch(/Expression/);
+    expect(flat[sentinelPath("listen.to.all.1.with.source")]).toBeDefined();
   });
 });

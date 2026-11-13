@@ -30,6 +30,7 @@ import {
   computeSentinelDefaults,
 } from "../../../src/side-panel/forms/taskFormContext";
 import { findShownField } from "../../../src/side-panel/forms/drill/drill";
+import { collectOtherFieldsMaps, withOtherFieldsLabel } from "../../../src/core/otherFields";
 
 const NODE_TYPES = [...TASK_TYPE_KEYS];
 
@@ -62,6 +63,13 @@ const WALKERS: [string, Walker][] = [
     "findShownField",
     (fields) =>
       ["if", "timeout", "metadata"].map((path) => findShownField(fields, path, () => undefined)),
+  ],
+  ["collectOtherFieldsMaps", (fields) => collectOtherFieldsMaps(fields).map((map) => map.path)],
+  // A transform: compared by the labels it gave, since its output keeps the section.
+  [
+    "withOtherFieldsLabel",
+    (fields) =>
+      collectOtherFieldsMaps(withOtherFieldsLabel(fields, "Relabelled")).map((map) => map.label),
   ],
   [
     "collectVariantFieldPaths",

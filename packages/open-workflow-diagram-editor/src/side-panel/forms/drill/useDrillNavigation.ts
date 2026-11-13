@@ -23,6 +23,7 @@ import {
   drillLabel,
   FIRST_TO_FILL,
   isInlineLevel,
+  isListEntry,
   levelFieldsOf,
   needsAtLeastOne,
   resolveDrillStack,
@@ -161,7 +162,8 @@ export function useDrillNavigation({
   // The top level, and a level with a single field (a lone object, or a map's own editor), show
   // their objects and maps inline.
   // Counted on the fields shown, so read-only's filtered level follows the same rule.
-  const inlineLevels = current === undefined || isInlineLevel(levelFields);
+  // An entry's top level is laid out like the task's: its objects and maps stand inline.
+  const inlineLevels = current === undefined || isListEntry(current) || isInlineLevel(levelFields);
 
   const levelOneOf = current?.kind === "one-of" ? current : undefined;
 

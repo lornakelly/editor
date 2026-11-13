@@ -23,8 +23,9 @@ import {
   type OneOfField,
   type OneOfVariant,
 } from "../../core/schemaToFormFields";
-import { flattenTask, setNestedPath } from "../../core/taskDraft";
+import { flattenTask, isListIndexInto, setNestedPath } from "../../core/taskDraft";
 import { isObjectNotArray } from "../../core/utils";
+import { mapEntriesOf, otherFieldsOwner, type OtherFieldsMap } from "../../core/otherFields";
 import { SENTINEL_SELF_KEY, isReservedPath, sentinelPath } from "./sentinels";
 
 // ---------------------------------------------------------------------------
@@ -142,7 +143,8 @@ export function getNestedValue(data: Record<string, unknown>, path: string): unk
   let current: unknown = data;
   for (const part of parts) {
     if (current === null || current === undefined) return undefined;
-    if (typeof current !== "object" || Array.isArray(current)) return undefined;
+    if (typeof current !== "object") return undefined;
+    if (Array.isArray(current) && !isListIndexInto(current, part)) return undefined;
     if (!Object.prototype.hasOwnProperty.call(current, part)) return undefined;
     current = (current as Record<string, unknown>)[part];
   }
@@ -203,7 +205,7 @@ export function forEachField(
 export function collectFormListPaths(fields: FormFieldDescriptor[]): Set<string> {
   const paths = new Set<string>();
   forEachField(fields, (field) => {
-    if (field.kind === "ordered-map" || field.kind === "event-filter-list") paths.add(field.path);
+    if (field.kind === "ordered-map" || field.kind === "object-list") paths.add(field.path);
   });
   return paths;
 }
@@ -222,7 +224,7 @@ export function collectJsonPaths(fields: FormFieldDescriptor[]): Set<string> {
 
 /**
  * Collects leaf field paths mapped to their effective kind for kind-aware clearing.
- * An `event-filter-list` is one leaf: its internal structure is managed outside of RHF Controllers.
+ * An `object-list` is one leaf: its internal structure is managed outside of RHF Controllers.
  */
 export function collectLeafKinds(fields: FormFieldDescriptor[]): Map<string, string> {
   const result = new Map<string, string>();
@@ -312,6 +314,8 @@ export function collectWholeValuePaths(
 
   const walk = (list: FormFieldDescriptor[]): void => {
     for (const field of list) {
+      // An "Other fields" map's entries are the object's own leaves: its path holds nothing.
+      if (field.kind === "map" && field.otherFieldsOf !== undefined) continue;
       if (field.kind === "map" || field.kind === "json") paths.add(field.path);
       else if (field.kind === "enum" && field.innerObjectFormat !== undefined)
         paths.add(field.path);
@@ -328,18 +332,24 @@ export function collectWholeValuePaths(
   return paths;
 }
 
-/** RHF reset() skips Controllers for absent paths — pad removed ones with "". */
+/**
+ * RHF reset() skips Controllers for absent paths — pad removed ones with "". Never the entries of
+ * an "Other fields" map (`otherFieldsMaps`): like a whole-value map's keys they are user data, and
+ * a padded `""` would come back as an empty entry.
+ */
 export function padRemovedPaths(
   resetVals: Record<string, unknown>,
   oldTask: Record<string, unknown>,
   newTask: Record<string, unknown>,
   wholeValuePaths: ReadonlySet<string> = new Set(),
+  otherFieldsMaps: readonly OtherFieldsMap[] = [],
 ): void {
   const oldFlat = flattenTask(oldTask, "", wholeValuePaths);
   const newFlat = flattenTask(newTask, "", wholeValuePaths);
   const newPaths = Object.keys(newFlat);
   for (const path of Object.keys(oldFlat)) {
     if (path in newFlat || isReservedPath(path)) continue;
+    if (otherFieldsOwner(otherFieldsMaps, path) !== undefined) continue;
     const conflicts = newPaths.some((np) => path.startsWith(np + ".") || np.startsWith(path + "."));
     if (!conflicts) {
       setNestedPath(resetVals, path, "");
@@ -368,6 +378,10 @@ export function prefixFields(fields: FormFieldDescriptor[], prefix: string): For
           fields: prefixFields(variant.fields, prefix),
         })),
       };
+    }
+    if (field.kind === "map" && field.otherFieldsOf !== undefined) {
+      const objectPath = `${prefix}.${field.otherFieldsOf.objectPath}`;
+      return { ...field, path, otherFieldsOf: { ...field.otherFieldsOf, objectPath } };
     }
     return { ...field, path };
   });
@@ -418,13 +432,10 @@ export function filterReadOnlyFields(
     if (field.kind === "map") {
       // Show the map group only when the task contains a non-empty object at this path: an empty
       // one has no entries to list, and its drill row would open onto nothing.
-      const value = getNestedValue(task, field.path);
-      return hasObjectAtPath(task, field.path) && Object.keys(value as object).length > 0
-        ? [field]
-        : [];
+      return Object.keys(mapEntriesOf(field, task) ?? {}).length > 0 ? [field] : [];
     }
 
-    if (field.kind === "event-filter-list" || field.kind === "ordered-map") {
+    if (field.kind === "object-list" || field.kind === "ordered-map") {
       const v = getNestedValue(task, field.path);
       return Array.isArray(v) && v.length > 0 ? [field] : [];
     }
@@ -480,6 +491,15 @@ function collectSentinelDefaults(
   for (const f of fields) {
     if (f.kind === "object" || f.kind === "section") {
       collectSentinelDefaults(f.children, taskData, currentSentinels, result, overwrite);
+    } else if (f.kind === "object-list") {
+      // Each committed entry opens on the options its own data matches.
+      const entries = getNestedValue(taskData, f.path);
+      if (Array.isArray(entries)) {
+        entries.forEach((_entry, i) => {
+          const entryFields = prefixFields(f.itemFields, `${f.path}.${i}`);
+          collectSentinelDefaults(entryFields, taskData, currentSentinels, result, overwrite);
+        });
+      }
     } else if (f.kind === "one-of") {
       const dataAtPath = oneOfData(f, taskData);
       const idx = f.variants.findIndex((v) => v.matchesData(dataAtPath));

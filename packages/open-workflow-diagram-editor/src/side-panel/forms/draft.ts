@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { collectOtherFieldsMaps, otherFieldsOwner } from "@/core/otherFields";
 import { getParentPath, isAtOrBelow } from "@/core/paths";
 import { applyDirtyValues, deletePath, flattenTask, setNestedPath } from "@/core/taskDraft";
 import { ROOT_ONE_OF_PATH, type FormFieldDescriptor } from "@/core/schemaToFormFields";
@@ -81,7 +82,13 @@ export function buildFormValues(
   }
   if (previousTask === undefined) return values;
 
-  padRemovedPaths(values, previousTask, task, collectWholeValuePaths(fields, task));
+  padRemovedPaths(
+    values,
+    previousTask,
+    task,
+    collectWholeValuePaths(fields, task),
+    collectOtherFieldsMaps(fields),
+  );
   for (const enumField of collectValueMapFields(fields)) {
     if (getNestedValue(task, enumField.path) === undefined) {
       setNestedPath(values, enumField.path, "");
@@ -334,7 +341,16 @@ export function computeDraftChanges({
       (!switched.some((oneOf) => isUnder(path, oneOf)) || (path in after && edited(path))),
   );
 
-  const paths = [...switched, ...removed, ...differing, ...unparsed];
+  // An "Other fields" map is one field like any map: its entries are leaves of its object, so
+  // each entry's path counts as the map's.
+  const otherFieldsMaps = collectOtherFieldsMaps(fields);
+  const paths = [
+    ...new Set(
+      [...switched, ...removed, ...differing, ...unparsed].map(
+        (path) => otherFieldsOwner(otherFieldsMaps, path)?.path ?? path,
+      ),
+    ),
+  ];
   return { hasChanges: true, paths: paths.length > 0 ? paths : [""] };
 }
 
