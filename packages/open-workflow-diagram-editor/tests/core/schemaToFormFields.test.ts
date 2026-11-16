@@ -29,6 +29,7 @@ import type {
   StringField,
   ObjectField,
   ObjectListField,
+  KeyedObjectsField,
   EnumField,
   JsonField,
   FormFieldDescriptor,
@@ -1518,7 +1519,7 @@ function collectKindPaths(
       return [...own, ...collectKindPaths(f.children, kind)];
     if (f.kind === "one-of")
       return [...own, ...f.variants.flatMap((v) => collectKindPaths(v.fields, kind))];
-    if (f.kind === "object-list" || f.kind === "ordered-map")
+    if (f.kind === "object-list" || f.kind === "ordered-map" || f.kind === "keyed-objects")
       return [...own, ...collectKindPaths(f.itemFields, kind)];
     return own;
   });
@@ -1575,5 +1576,33 @@ describe("object lists", () => {
         ).toBe(true);
       }
     }
+  });
+});
+
+describe("keyed objects (correlate)", () => {
+  const listenFields = () => getFormFieldsForNodeType("listen");
+
+  it("correlate is keyed-objects with From required and Expect optional, in list items and under one", () => {
+    const keyed = collectKindPaths(listenFields(), "keyed-objects");
+    expect(keyed).toEqual(["correlate", "correlate", "listen.to.one.correlate"]);
+    const one = getListenToOneOf()
+      .variants.find((v) => v.label === "One Event Consumption Strategy")!
+      .fields.flatMap((f) => (f.kind === "object" ? f.children : [f]))
+      .find((f) => f.path === "listen.to.one.correlate") as KeyedObjectsField;
+    expect(one.itemFields.map((f) => [f.path, f.required])).toEqual([
+      ["from", true],
+      ["expect", false],
+    ]);
+  });
+
+  it("survey: correlate is the only keyed-objects", () => {
+    const found = [...TASK_TYPE_KEYS].flatMap((t) =>
+      collectKindPaths(getFormFieldsForNodeType(t), "keyed-objects").map((p) => `${t}:${p}`),
+    );
+    expect(found).toEqual([
+      "listen:correlate",
+      "listen:correlate",
+      "listen:listen.to.one.correlate",
+    ]);
   });
 });

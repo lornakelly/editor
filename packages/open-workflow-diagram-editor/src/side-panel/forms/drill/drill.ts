@@ -132,7 +132,7 @@ export function isInlineLevel(fields: readonly FormFieldDescriptor[]): boolean {
 /** Kinds that hold more than one value; anything else is a single plain value. */
 export const STRUCTURED_KINDS: ReadonlySet<FormFieldDescriptor["kind"]> = new Set<
   FormFieldDescriptor["kind"]
->(["object", "map", "one-of", "section", "ordered-map", "object-list"]);
+>(["object", "map", "one-of", "section", "ordered-map", "object-list", "keyed-objects"]);
 
 /** Whether a one-of variant's fields are one plain value, or none. */
 export function isSingleValue(fields: readonly FormFieldDescriptor[]): boolean {

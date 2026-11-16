@@ -202,6 +202,15 @@ export function forEachField(
  * Finds paths of arrays edited through form controls (ordered maps and event-filter lists).
  * These arrays get empty values pruned before saving, since clearing a control means "delete this key".
  */
+/** Paths of the object lists among `fields` (see `ApplyDirtyOptions.objectListPaths`). */
+export function collectObjectListPaths(fields: FormFieldDescriptor[]): Set<string> {
+  const paths = new Set<string>();
+  forEachField(fields, (field) => {
+    if (field.kind === "object-list") paths.add(field.path);
+  });
+  return paths;
+}
+
 export function collectFormListPaths(fields: FormFieldDescriptor[]): Set<string> {
   const paths = new Set<string>();
   forEachField(fields, (field) => {
@@ -316,7 +325,8 @@ export function collectWholeValuePaths(
     for (const field of list) {
       // An "Other fields" map's entries are the object's own leaves: its path holds nothing.
       if (field.kind === "map" && field.otherFieldsOf !== undefined) continue;
-      if (field.kind === "map" || field.kind === "json") paths.add(field.path);
+      if (field.kind === "map" || field.kind === "json" || field.kind === "keyed-objects")
+        paths.add(field.path);
       else if (field.kind === "enum" && field.innerObjectFormat !== undefined)
         paths.add(field.path);
       else if (field.kind === "object" || field.kind === "section") walk(field.children);
@@ -438,6 +448,12 @@ export function filterReadOnlyFields(
     if (field.kind === "object-list" || field.kind === "ordered-map") {
       const v = getNestedValue(task, field.path);
       return Array.isArray(v) && v.length > 0 ? [field] : [];
+    }
+
+    if (field.kind === "keyed-objects") {
+      // Shown while it has a key; each key's fields are filtered where they render.
+      const v = getNestedValue(task, field.path);
+      return isObjectNotArray(v) && Object.keys(v).length > 0 ? [field] : [];
     }
 
     if (field.kind === "json") {

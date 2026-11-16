@@ -236,10 +236,10 @@ describe("object-list entries", () => {
     expect(
       resolveDrillStack(
         listenFields,
-        ["listen.to", "listen.to.all.0", "listen.to.all.0.correlate"],
+        ["listen.to", "listen.to.all.0", "listen.to.all.0.with"],
         selectAll,
       ).map((l) => l.path),
-    ).toEqual(["listen.to", "listen.to.all.0", "listen.to.all.0.correlate"]);
+    ).toEqual(["listen.to", "listen.to.all.0", "listen.to.all.0.with"]);
   });
 
   it("an object list is fixed and renders in place, never as a row", () => {

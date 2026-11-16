@@ -85,6 +85,8 @@ export const en = {
   "sidebar.map.valueLabel": "Entry value",
   "sidebar.map.deleteEntry": "Delete entry",
   "sidebar.map.otherFields": "Other fields",
+  "sidebar.keyed.key": "Key",
+  "sidebar.keyed.add": "Add key",
   "sidebar.stringList.addItem": "+ Add item",
   "sidebar.stringList.itemPlaceholder": "value",
   "sidebar.stringList.itemLabel": "List item",

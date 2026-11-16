@@ -63,10 +63,11 @@ describe("listen with an emptied event filter", () => {
 
     const errors = collectTaskErrors("listen", values, fields);
 
-    expect(errors.fieldErrors).toEqual({
+    // A level error: the emptied `with` shows it above its "Add at least one" chips.
+    expect(errors.levelErrors).toEqual({
       "listen.to.any.0.with": "must NOT have fewer than 1 properties",
     });
-    expect(errors.levelErrors).toEqual({});
+    expect(errors.fieldErrors).toEqual({});
     expect(count(errors)).toBe(1);
   });
 
@@ -94,10 +95,10 @@ describe("listen with an emptied event filter", () => {
     );
     const merged = mergeClassifiedErrors(seeded, collectTaskErrors("listen", values, fields));
 
-    expect(merged.fieldErrors).toEqual({
+    expect(merged.levelErrors).toEqual({
       "listen.to.any.0.with": "must NOT have fewer than 1 properties",
     });
-    expect(merged.levelErrors).toEqual({});
+    expect(merged.fieldErrors).toEqual({});
     expect(merged.unplacedErrors).toEqual({});
     expect(count(merged)).toBe(1);
   });

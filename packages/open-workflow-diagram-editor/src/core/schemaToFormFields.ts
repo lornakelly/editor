@@ -42,6 +42,7 @@ export type FormFieldDescriptor =
   | ObjectField
   | SectionField
   | ObjectListField
+  | KeyedObjectsField
   | MapField
   | JsonField
   | OrderedMapField
@@ -141,6 +142,17 @@ export interface ObjectListField extends FieldBase {
   itemLabel: string;
   /** The items schema's `$defs` name when it is a `$ref` ("eventFilter"), for the summary registry. */
   itemDef?: string;
+}
+
+/**
+ * An object whose keys are user-chosen and whose every value is an object of known fields
+ * (`additionalProperties` an object schema with `properties`, no `properties` of its own): listen's
+ * `correlate`, each key holding `{ from, expect? }`.
+ */
+export interface KeyedObjectsField extends FieldBase {
+  kind: "keyed-objects";
+  /** Fields of one entry's value, paths relative to that value. */
+  itemFields: FormFieldDescriptor[];
 }
 
 /* A map where order is significant, written as array of single key objects with a user defined name e.g switch
@@ -381,6 +393,24 @@ function isMapSchema(schema: Record<string, unknown>): boolean {
   // Bare { type: "object" } with no structural constraints — treat as an open key-value map.
   if (schema.additionalProperties === undefined && !schema.oneOf && !schema.anyOf) return true;
   return false;
+}
+
+/**
+ * The value schema of an object whose keys are free and whose values are objects of known fields
+ * (see `KeyedObjectsField`), following one `$ref`; undefined for any other schema.
+ */
+function keyedObjectSchema(
+  schema: Record<string, unknown>,
+  defs: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (schema.type !== "object" || schema.properties !== undefined) return undefined;
+  let value = schema.additionalProperties;
+  if (isObjectNotArray(value) && typeof value.$ref === "string") {
+    value = resolveRef(value.$ref, defs) ?? value;
+  }
+  return isObjectNotArray(value) && value.type === "object" && isObjectNotArray(value.properties)
+    ? value
+    : undefined;
 }
 
 /**
@@ -964,6 +994,26 @@ export function schemaToFormFields(
           continue;
         }
       }
+    }
+
+    // ── Keyed objects (every value an object of known fields) ───────────────
+    const keyedValue = keyedObjectSchema(resolved, localDefs);
+    if (keyedValue) {
+      fields.push({
+        kind: "keyed-objects",
+        path: fieldPath,
+        label: deriveLabel(prop, key),
+        ...withDesc(description),
+        required: isRequired,
+        itemFields: schemaToFormFields(
+          keyedValue as DereferencedSchema,
+          localDefs,
+          new Set(Array.isArray(keyedValue.required) ? (keyedValue.required as string[]) : []),
+          "",
+          format,
+        ),
+      });
+      continue;
     }
 
     // ── Open-ended key-value map (additionalProperties, no fixed properties) ─

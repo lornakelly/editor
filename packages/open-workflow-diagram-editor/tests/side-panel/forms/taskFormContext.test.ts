@@ -707,3 +707,14 @@ describe("computeSentinelDefaults inside object lists", () => {
     expect(flat[sentinelPath("listen.to.all.1.with.source")]).toBeDefined();
   });
 });
+
+describe("collectWholeValuePaths: keyed objects", () => {
+  it("treats correlate as one whole value", () => {
+    const task = {
+      listen: { to: { one: { with: { type: "t" }, correlate: { k: { from: ".a" } } } } },
+    };
+    expect(collectWholeValuePaths(getFormFieldsForNodeType("listen"), task)).toContain(
+      "listen.to.one.correlate",
+    );
+  });
+});

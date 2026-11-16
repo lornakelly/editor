@@ -69,6 +69,14 @@ type EditSessionValue = {
     task: FormValues,
     options?: Parameters<typeof buildFormValues>[2],
   ) => void;
+  /**
+   * Where each object-list entry started, per list path: the committed index it was, or `null`
+   * for an entry added in this draft. A list with no record is untouched (entry i is committed i).
+   * Kept in step by the list's add and remove, cleared by every reset, so a removal never makes
+   * the entries after it look changed.
+   */
+  entryOrigins: ReadonlyMap<string, readonly (number | null)[]>;
+  setEntryOrigins: (listPath: string, origins: readonly (number | null)[]) => void;
   /* True while discard dialog is shown */
   isNavigationBlocked: boolean;
   /*
@@ -112,6 +120,15 @@ export function EditSessionProvider({ children }: { children: React.ReactNode })
   const [draftVersion, setDraftVersion] = React.useState<number>(0);
   const addedFields = useAddedFieldsState();
   const clearAddedFields = addedFields.clear;
+  const [entryOrigins, setAllEntryOrigins] = React.useState<
+    ReadonlyMap<string, readonly (number | null)[]>
+  >(() => new Map());
+  const setEntryOrigins = React.useCallback(
+    (listPath: string, origins: readonly (number | null)[]) =>
+      setAllEntryOrigins((current) => new Map(current).set(listPath, origins)),
+    [],
+  );
+  const clearEntryOrigins = React.useCallback(() => setAllEntryOrigins(new Map()), []);
 
   const addedRef = React.useRef(addedFields.added);
   React.useEffect(() => {
@@ -142,8 +159,9 @@ export function EditSessionProvider({ children }: { children: React.ReactNode })
       setBaseline(next);
       setDraftVersion((version) => version + 1);
       clearAddedFields();
+      clearEntryOrigins();
     },
-    [form, clearAddedFields],
+    [form, clearAddedFields, clearEntryOrigins],
   );
 
   const [blockedNavigation, setBlockedNavigation] = React.useState<(() => void) | null>(null);
@@ -171,9 +189,10 @@ export function EditSessionProvider({ children }: { children: React.ReactNode })
 
     form.reset(liveStateRef.current.defaultValues);
     clearAddedFields();
+    clearEntryOrigins();
     setBlockedNavigation(null);
     blockedNavigation();
-  }, [blockedNavigation, form, clearAddedFields]);
+  }, [blockedNavigation, form, clearAddedFields, clearEntryOrigins]);
 
   const cancelNavigation = React.useCallback(() => setBlockedNavigation(null), []);
 
@@ -184,6 +203,8 @@ export function EditSessionProvider({ children }: { children: React.ReactNode })
       baselineTask: baseline?.task ?? null,
       draftVersion,
       resetDraft,
+      entryOrigins,
+      setEntryOrigins,
       isNavigationBlocked: blockedNavigation !== null,
       requestNavigation,
       confirmDiscard,
@@ -195,6 +216,8 @@ export function EditSessionProvider({ children }: { children: React.ReactNode })
       baseline,
       draftVersion,
       resetDraft,
+      entryOrigins,
+      setEntryOrigins,
       blockedNavigation,
       requestNavigation,
       confirmDiscard,

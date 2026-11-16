@@ -137,6 +137,41 @@ export function pruneEmptyLeaves<T>(value: T): T {
   return result as T;
 }
 
+/** The value at a dot path of `obj` (entering lists by index), or undefined. */
+function getAtPath(obj: unknown, dotPath: string): unknown {
+  let current = obj;
+  for (const part of dotPath.split(".")) {
+    if (isListIndexInto(current, part)) current = current[Number(part)];
+    else if (isObjectNotArray(current)) current = current[part];
+    else return undefined;
+  }
+  return current;
+}
+
+/**
+ * `value` without the objects the draft emptied: an object that is `{}` here but not in
+ * `committed` (at the same place) is removed, as a removal outside a list prunes the parents it
+ * empties. A `{}` already committed and left alone stays. Lists are matched entry by entry.
+ */
+export function pruneEmptiedObjects<T>(value: T, committed: unknown): T {
+  if (Array.isArray(value)) {
+    const before = Array.isArray(committed) ? committed : [];
+    return value.map((entry, index) => pruneEmptiedObjects(entry, before[index])) as T;
+  }
+  if (!isObjectNotArray(value)) return value;
+  const before = isObjectNotArray(committed) ? committed : {};
+  const result: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value)) {
+    const pruned = pruneEmptiedObjects(v, before[key]);
+    const emptied =
+      isObjectNotArray(pruned) &&
+      Object.keys(pruned).length === 0 &&
+      !(isObjectNotArray(before[key]) && Object.keys(before[key]).length === 0);
+    if (!emptied) result[key] = pruned;
+  }
+  return result as T;
+}
+
 export type ApplyDirtyOptions = {
   /** Paths dirty solely because the variant selector (sentinel) changed. */
   sentinelPaths?: Set<string>;
@@ -155,6 +190,12 @@ export type ApplyDirtyOptions = {
    * empty leaves pruned, because clearing a control is how you remove a key there.
    */
   formListPaths?: Set<string>;
+  /**
+   * The form lists whose entries are objects of fields (`object-list`): there an object the
+   * draft emptied is dropped too (`pruneEmptiedObjects`). Never switch cases, whose entry is
+   * `{ <case name>: {...} }`: emptying a case must not lose its name.
+   */
+  objectListPaths?: Set<string>;
   /** Presence key of each selected variant on screen (e.g. run -> container). */
   sentinelPresenceKeys?: Map<string, string>;
 };
@@ -182,6 +223,7 @@ export function applyDirtyValues(
     sentinelConstWrites = new Map(),
     sentinelStalePaths = new Map(),
     formListPaths = new Set(),
+    objectListPaths = new Set(),
     sentinelPresenceKeys = new Map(),
   }: ApplyDirtyOptions = {},
 ): Record<string, unknown> {
@@ -200,7 +242,14 @@ export function applyDirtyValues(
         protectedKey: taskTypeKey,
       });
     } else if (Array.isArray(value) && formListPaths.has(dotPath)) {
-      setPath(result, dotPath.split("."), pruneEmptyLeaves(value));
+      const pruned = pruneEmptyLeaves(value);
+      setPath(
+        result,
+        dotPath.split("."),
+        objectListPaths.has(dotPath)
+          ? pruneEmptiedObjects(pruned, getAtPath(original, dotPath))
+          : pruned,
+      );
     } else {
       setPath(result, dotPath.split("."), value);
     }

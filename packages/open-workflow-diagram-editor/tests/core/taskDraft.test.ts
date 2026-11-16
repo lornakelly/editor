@@ -612,3 +612,45 @@ describe("path helpers inside lists", () => {
     expect(target).toEqual({ to: { all: [{}] } });
   });
 });
+
+describe("applyDirtyValues: emptied objects inside object-list entries", () => {
+  const original = {
+    listen: {
+      to: {
+        all: [
+          { with: { type: "a" }, correlate: { k: { from: ".a" } } },
+          { with: { type: "b" }, correlate: {} },
+        ],
+      },
+    },
+  };
+  const values = {
+    "listen.to.all": [
+      { with: { type: "a" }, correlate: { k: undefined } },
+      { with: { type: "b" }, correlate: {} },
+    ],
+  };
+  const apply = (options: Parameters<typeof applyDirtyValues>[3]) =>
+    applyDirtyValues(original, values, new Set(["listen.to.all"]), options);
+
+  it("drops an object the draft emptied, keeping a committed {} the user didn't touch", () => {
+    const result = apply({
+      formListPaths: new Set(["listen.to.all"]),
+      objectListPaths: new Set(["listen.to.all"]),
+    });
+    expect((result.listen as typeof original.listen).to.all).toEqual([
+      { with: { type: "a" } },
+      { with: { type: "b" }, correlate: {} },
+    ]);
+  });
+
+  it("leaves other form lists (switch cases) as they were: an emptied case keeps its name", () => {
+    const result = applyDirtyValues(
+      { switch: [{ caseA: { when: "${ .a }" } }] },
+      { switch: [{ caseA: { when: undefined } }] },
+      new Set(["switch"]),
+      { formListPaths: new Set(["switch"]) },
+    );
+    expect(result.switch).toEqual([{ caseA: {} }]);
+  });
+});

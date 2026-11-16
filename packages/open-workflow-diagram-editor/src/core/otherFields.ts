@@ -26,6 +26,7 @@
 
 import { getParentPath, isAtOrBelow, joinPath } from "./paths";
 import type { FormFieldDescriptor, MapField, OtherFieldsOf } from "./schemaToFormFields";
+import { isListIndexInto } from "./taskDraft";
 import { isObjectNotArray } from "./utils";
 
 export type OtherFieldsMap = MapField & { otherFieldsOf: OtherFieldsOf };
@@ -34,10 +35,17 @@ export function isOtherFieldsMap(field: FormFieldDescriptor): field is OtherFiel
   return field.kind === "map" && field.otherFieldsOf !== undefined;
 }
 
-/** The value at a dot path, or `undefined` when any segment is missing or not an object. */
+/**
+ * The value at a dot path, or `undefined` when any segment is missing or not an object. A numeric
+ * segment indexes a list (an object-list entry: `to.all.1.with`).
+ */
 function valueAt(source: Record<string, unknown>, path: string): unknown {
   let current: unknown = source;
   for (const part of path.split(".")) {
+    if (isListIndexInto(current, part)) {
+      current = current[Number(part)];
+      continue;
+    }
     if (!isObjectNotArray(current) || !Object.prototype.hasOwnProperty.call(current, part)) {
       return undefined;
     }
