@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
+import * as React from "react";
 import { HelpCircle } from "lucide-react";
 import { useI18n } from "@openworkflowspec/i18n";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger, useEditorRoot } from "@/components/ui/popover";
 import { RemoveFieldButton } from "./removeField";
 import { useTaskFormContext } from "./taskFormContext";
 
 // ---------------------------------------------------------------------------
-// FieldLabel — label text + optional description tooltip
+// FieldLabel — label text + optional description popover
 // ---------------------------------------------------------------------------
 
 export function FieldLabel({
@@ -55,12 +56,8 @@ export function FieldLabel({
           {label}
         </label>
       )}
-      {required && (
-        <span className="dec-form-field-required" aria-hidden="true">
-          *
-        </span>
-      )}
-      {description && <HelpTooltip label={label} description={description} />}
+      <RequiredMark required={required} />
+      {description && <HelpPopover label={label} description={description} />}
       <RemoveFieldButton path={fieldPath} />
     </div>
   );
@@ -79,21 +76,65 @@ export function ChangedDot() {
   );
 }
 
-/** The "?" after a field's label or heading, showing the schema's description of it. */
-export function HelpTooltip({ label, description }: { label: string; description: string }) {
-  const { t } = useI18n();
+/**
+ * The `*` after a required field's name (not in read-only).
+ */
+export function RequiredMark({
+  required,
+  spaced = false,
+}: {
+  required: boolean;
+  spaced?: boolean;
+}) {
+  const { isReadOnly } = useTaskFormContext();
+  if (!required || isReadOnly) return null;
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
+    <span className="dec-form-field-required" aria-hidden="true">
+      {spaced ? " *" : "*"}
+    </span>
+  );
+}
+
+/**
+ * The "?" after a field's label or heading.
+ */
+export function HelpPopover({ label, description }: { label: string; description: string }) {
+  const { t } = useI18n();
+  const titleId = React.useId();
+  const { triggerRef, root, captureRoot } = useEditorRoot<HTMLButtonElement>();
+  const [open, setOpen] = React.useState(false);
+  const handleOpenChange = (next: boolean) => {
+    if (next) captureRoot();
+    setOpen(next);
+  };
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
         <button
+          ref={triggerRef}
           type="button"
           className="dec-form-field-help"
           aria-label={`${t("aria.help")}: ${label}`}
         >
           <HelpCircle className="dec-form-field-help-icon" aria-hidden="true" />
         </button>
-      </TooltipTrigger>
-      <TooltipContent>{description}</TooltipContent>
-    </Tooltip>
+      </PopoverTrigger>
+      <PopoverContent
+        container={root}
+        side="bottom"
+        sideOffset={6}
+        align="start"
+        alignOffset={-8}
+        collisionPadding={8}
+        className="dec-popover dec-help-popover"
+        arrowClassName="dec-popover-arrow"
+        aria-labelledby={titleId}
+      >
+        <p id={titleId} className="dec-help-popover-title">
+          {label}
+        </p>
+        <p className="dec-help-popover-text">{description}</p>
+      </PopoverContent>
+    </Popover>
   );
 }

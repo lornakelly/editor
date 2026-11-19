@@ -1043,3 +1043,9 @@ export const LISTEN_FILTERS_WORKFLOW = {
     },
   ],
 };
+
+/** Wait task fixture: an inline duration (several fields) and an ISO 8601 literal (one value). */
+export const WAIT_DURATIONS_WORKFLOW = {
+  document: { dsl: "1.0.3", name: "wait-durations", version: "1.0.0", namespace: "default" },
+  do: [{ waitInline: { wait: { seconds: 30 } } }, { waitLiteral: { wait: "PT30S" } }],
+};

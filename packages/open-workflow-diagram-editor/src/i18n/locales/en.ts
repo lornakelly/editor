@@ -33,7 +33,6 @@ export const en = {
   "sidebar.summary": "Summary",
   "sidebar.tags": "Tags",
   "sidebar.node": "Node",
-  "sidebar.sectionSource": "Source",
   "sidebar.viewSource": "View source",
   "sidebar.noDetails": "No additional details for this node",
   "node.entry": "Entry",
@@ -62,6 +61,7 @@ export const en = {
   "sidebar.field.item": "item",
   "sidebar.field.items": "items",
   "sidebar.field.variant": "option",
+  "sidebar.field.taskOption": "Type",
   "sidebar.field.fieldsYouCanAdd": "Fields you can add",
   "sidebar.field.addAtLeastOne": "Add at least one",
   "sidebar.field.add": "Add",
@@ -106,9 +106,8 @@ export const en = {
   "sidebar.guard.description": "You have unsaved edits to this node. Leaving will discard them",
   "sidebar.guard.keepEditing": "Keep editing",
   "sidebar.guard.discard": "Discard",
-  "sidebar.drill.commonFields": "Common fields",
+  "sidebar.drill.advanced": "Advanced",
   "sidebar.group.flow": "Flow",
-  "sidebar.group.taskSettings": "Task settings",
   "sidebar.drill.open": "Open",
   "sidebar.drill.of": "of",
   "sidebar.drill.set": "set",
@@ -124,7 +123,8 @@ export const en = {
   "sidebar.drill.hiddenLevels": "Hidden levels",
   "taskList.noTasks": "No child tasks defined.",
   "taskList.label": "Task list",
-  "taskList.editHint": "Edit tasks by selecting them from the diagram",
+  "taskList.select": "Select",
+  "taskList.selectHint": "Select a task to open it",
 } as const;
 
 export type TranslationKeys = keyof typeof en;

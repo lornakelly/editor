@@ -21,6 +21,7 @@ import {
   isPointerAtOrBelow,
   joinPath,
   pointerToDotPath,
+  dotPathToPointer,
 } from "../../src/core/paths";
 
 describe("joinPath", () => {
@@ -80,5 +81,16 @@ describe("pointerToDotPath", () => {
     ["/headers/0", "headers.0"],
   ])("pointerToDotPath(%j) is %j", (pointer, expected) => {
     expect(pointerToDotPath(pointer)).toBe(expected);
+  });
+});
+
+describe("dotPathToPointer", () => {
+  it.each([
+    ["", ""],
+    ["try", "/try"],
+    ["catch.do", "/catch/do"],
+    ["fork.branches", "/fork/branches"],
+  ])("dotPathToPointer(%j) is %j", (path, expected) => {
+    expect(dotPathToPointer(path)).toBe(expected);
   });
 });
