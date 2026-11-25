@@ -23,6 +23,7 @@ import type { ColorMode } from "@openworkflowspec/core";
 import "@openworkflowspec/diagram-editor/styles.css";
 import "@openworkflowspec/text-editor/styles.css";
 import "./DualEditor.css";
+import { TEXT_EDITOR_COLORS } from "./textEditorColors";
 
 export type DualEditorProps = {
   content: string;
@@ -193,6 +194,7 @@ export const DualEditor = ({
           createLanguageServiceWorker={createLanguageServiceWorker}
           isReadOnly={isReadOnly}
           colorMode={colorMode}
+          themeColors={TEXT_EDITOR_COLORS}
           onContentChange={handleTextContentChange}
         />
       </section>

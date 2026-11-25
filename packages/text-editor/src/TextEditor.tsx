@@ -21,7 +21,10 @@ import { jsonDefaults } from "monaco-editor/languages/features/json/register";
 import "monaco-editor/languages/definitions/yaml/register";
 import { useResolvedColorMode } from "@openworkflowspec/core";
 import { createTextEditorLanguageService } from "./language-service";
-import { defineMonacoThemes, MONACO_THEME_NAMES } from "./monacoThemes";
+import { resolveMonacoTheme } from "./monacoThemes";
+import type { TextEditorThemeColors } from "./monacoThemes";
+
+export type { TextEditorThemeColors } from "./monacoThemes";
 import type { ColorMode } from "@openworkflowspec/core";
 
 jsonDefaults.setModeConfiguration({
@@ -47,6 +50,13 @@ export type TextEditorProps = {
   onContentChange?: (content: string) => void;
   isReadOnly?: boolean;
   colorMode?: ColorMode;
+  /**
+   * Monaco colour overrides per colour mode, e.g. to match surrounding UI.
+   * Without them the editor uses Monaco's `vs`/`vs-dark`. Monaco's theme is
+   * global to the page, so every Monaco editor on it shows the theme set last.
+   * Pass a stable object: a new one re-applies the theme.
+   */
+  themeColors?: TextEditorThemeColors;
   ariaLabel?: string;
 };
 
@@ -58,6 +68,7 @@ export const TextEditor = ({
   onContentChange,
   isReadOnly = false,
   colorMode = "system",
+  themeColors,
   ariaLabel = "Workflow source editor",
 }: TextEditorProps) => {
   const resolvedColorMode = useResolvedColorMode(colorMode);
@@ -76,8 +87,6 @@ export const TextEditor = ({
       monaco.Uri.parse(`inmemory://openworkflow/workflow.${language}`),
     );
 
-    defineMonacoThemes();
-
     const editor = monaco.editor.create(containerRef.current, {
       model,
       readOnly: isReadOnly,
@@ -85,7 +94,7 @@ export const TextEditor = ({
       codeLens: !isReadOnly,
       automaticLayout: true,
       renderLineHighlight: "none",
-      theme: MONACO_THEME_NAMES[resolvedColorMode],
+      theme: resolveMonacoTheme(resolvedColorMode, themeColors),
     });
 
     const languageService = createTextEditorLanguageService(
@@ -153,8 +162,8 @@ export const TextEditor = ({
       return;
     }
 
-    monaco.editor.setTheme(MONACO_THEME_NAMES[resolvedColorMode]);
-  }, [resolvedColorMode]);
+    monaco.editor.setTheme(resolveMonacoTheme(resolvedColorMode, themeColors));
+  }, [resolvedColorMode, themeColors]);
 
   return (
     <div

@@ -15,57 +15,42 @@
  */
 
 import * as monaco from "monaco-editor/editor";
-import { EDITOR_PALETTE } from "@openworkflowspec/core";
 import type { ResolvedColorMode } from "@openworkflowspec/core";
 
 /**
- * Monaco's own `vs`/`vs-dark` themes are neutral grey, which clashes with the
- * diagram editor's slate surfaces when the two sit side by side. These inherit
- * Monaco's syntax colours and replace only the surfaces.
+ * Monaco colour overrides per colour mode, keyed by Monaco colour id
+ * (e.g. `"editor.background"`). Syntax colours still come from `vs`/`vs-dark`.
  */
-export const MONACO_THEME_NAMES: Record<ResolvedColorMode, string> = {
-  light: "ows-light",
-  dark: "ows-dark",
-};
+export type TextEditorThemeColors = Partial<Record<ResolvedColorMode, Record<string, string>>>;
 
 const BASE_THEMES: Record<ResolvedColorMode, monaco.editor.BuiltinTheme> = {
   light: "vs",
   dark: "vs-dark",
 };
 
-let areThemesDefined = false;
+export const CUSTOM_THEME_NAMES: Record<ResolvedColorMode, string> = {
+  light: "ows-custom-light",
+  dark: "ows-custom-dark",
+};
 
-/** Defines both themes once per page; Monaco's theme registry is global. */
-export const defineMonacoThemes = (): void => {
-  if (areThemesDefined) {
-    return;
+/**
+ * The Monaco theme to use for `mode`: the built-in one, or, when `colors` has
+ * overrides for that mode, a theme inheriting it with those colours.
+ */
+export const resolveMonacoTheme = (
+  mode: ResolvedColorMode,
+  colors: TextEditorThemeColors | undefined,
+): string => {
+  const modeColors = colors?.[mode];
+  if (!modeColors) {
+    return BASE_THEMES[mode];
   }
 
-  for (const mode of ["light", "dark"] as const) {
-    const palette = EDITOR_PALETTE[mode];
-    monaco.editor.defineTheme(MONACO_THEME_NAMES[mode], {
-      base: BASE_THEMES[mode],
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": palette.background,
-        "editorGutter.background": palette.background,
-        "minimap.background": palette.background,
-        // Monaco's own line beside the scrollbar doubled the dual editor's divider.
-        "editorOverviewRuler.border": "#00000000",
-        "editorLineNumber.foreground": palette.lineNumber,
-        "editorLineNumber.activeForeground": palette.lineNumberActive,
-        "editorIndentGuide.background1": palette.indentGuide,
-        "editorIndentGuide.activeBackground1": palette.indentGuideActive,
-        "editorWidget.background": palette.raised,
-        "editorWidget.border": palette.border,
-        "editorSuggestWidget.background": palette.raised,
-        "editorSuggestWidget.border": palette.border,
-        "editorHoverWidget.background": palette.raised,
-        "editorHoverWidget.border": palette.border,
-      },
-    });
-  }
-
-  areThemesDefined = true;
+  monaco.editor.defineTheme(CUSTOM_THEME_NAMES[mode], {
+    base: BASE_THEMES[mode],
+    inherit: true,
+    rules: [],
+    colors: modeColors,
+  });
+  return CUSTOM_THEME_NAMES[mode];
 };

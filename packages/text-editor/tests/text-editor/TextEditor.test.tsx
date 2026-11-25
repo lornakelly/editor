@@ -31,6 +31,7 @@ import {
   mockSetModelLanguage,
   simulateEditorContentChange,
   mockSetTheme,
+  mockDefineTheme,
   mockMonacoWorkerDispose,
 } from "../__mocks__/monaco-editor";
 import { TextEditor, type TextEditorProps } from "../../src/TextEditor";
@@ -340,39 +341,63 @@ describe("TextEditor", () => {
   });
 
   describe("theme", () => {
-    it("creates Monaco with the editor's own theme, not Monaco's grey one", () => {
+    it("uses Monaco's built-in theme and defines none without theme colours", () => {
       renderEditor({ colorMode: "dark" });
 
       expect(mockEditorCreate).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ theme: "ows-dark" }),
+        expect.objectContaining({ theme: "vs-dark" }),
       );
+      expect(mockDefineTheme).not.toHaveBeenCalled();
+    });
+
+    it("applies theme colours on top of the built-in theme for the current mode", () => {
+      const themeColors = { dark: { "editor.background": "#1a202c" } };
+      renderEditor({ colorMode: "dark", themeColors });
+
+      expect(mockDefineTheme).toHaveBeenCalledWith("ows-custom-dark", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: themeColors.dark,
+      });
+      expect(mockEditorCreate).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ theme: "ows-custom-dark" }),
+      );
+      expect(mockSetTheme).toHaveBeenLastCalledWith("ows-custom-dark");
+    });
+
+    it("falls back to the built-in theme for a mode without theme colours", () => {
+      renderEditor({ colorMode: "light", themeColors: { dark: { "editor.background": "#000" } } });
+
+      expect(mockSetTheme).toHaveBeenLastCalledWith("vs");
     });
 
     it("uses the light Monaco theme for light color mode", () => {
       renderEditor({ colorMode: "light" });
 
       expect(mockSetTheme).toHaveBeenCalledOnce();
-      expect(mockSetTheme).toHaveBeenCalledWith("ows-light");
+      expect(mockSetTheme).toHaveBeenCalledWith("vs");
     });
 
     it("uses the dark Monaco theme for dark color mode", () => {
       renderEditor({ colorMode: "dark" });
 
       expect(mockSetTheme).toHaveBeenCalledOnce();
-      expect(mockSetTheme).toHaveBeenCalledWith("ows-dark");
+      expect(mockSetTheme).toHaveBeenCalledWith("vs-dark");
     });
 
     it("updates the Monaco theme when color mode changes", () => {
       const { rerenderEditor } = renderEditor({ colorMode: "light" });
 
-      expect(mockSetTheme).toHaveBeenCalledWith("ows-light");
+      expect(mockSetTheme).toHaveBeenCalledWith("vs");
       mockSetTheme.mockClear();
 
       rerenderEditor({ colorMode: "dark" });
 
       expect(mockSetTheme).toHaveBeenCalledOnce();
-      expect(mockSetTheme).toHaveBeenCalledWith("ows-dark");
+      expect(mockSetTheme).toHaveBeenCalledWith("vs-dark");
     });
 
     it("does not recreate Monaco when color mode changes", () => {

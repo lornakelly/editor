@@ -17,5 +17,3 @@
 export type { ColorMode } from "./types/colorMode";
 export type { ResolvedColorMode } from "./types/colorMode";
 export { useResolvedColorMode } from "./hooks/useResolvedColorMode";
-export { EDITOR_PALETTE } from "./theme/editorPalette";
-export type { EditorPalette } from "./theme/editorPalette";
